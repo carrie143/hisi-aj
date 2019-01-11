@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hisi.mapper.HisiRoleMapper">
+	<resultMap id="BaseResultMap" type="com.hisi.model.HisiRole">
+		<id column="id" jdbcType="INTEGER" property="id" />
+		<result column="role_name" jdbcType="VARCHAR" property="roleName" />
+		<result column="role_type" jdbcType="VARCHAR" property="roleType" />
+		<result column="role_desc" jdbcType="LONGVARCHAR" property="roleDesc" />
+	</resultMap>
+
+<select id="getRoleListByType" parameterType="java.lang.String" resultType="java.lang.String">
+	select role_name from hisi_role where role_type=#{roleType}
+</select>
+
+<select id="findRoleTypeByName" parameterType="java.lang.String" resultType="java.lang.String">
+	select role_type from hisi_role where role_name=#{roleName}
+</select>
+	<update id="editRole">
+		update hisi_role
+		set role_name = #{roleName},
+		role_desc =#{roleDesc},
+		role_type=#{roleType}
+		where id = #{id}
+	</update>
+	<select id="getRoleId"  parameterType="java.lang.String" resultType="java.lang.Integer">
+		select id from hisi_role where role_name=#{roleName} and role_type!="通道出口（出X光机后）"
+	</select>
+	<select id="getRoles"  resultType="java.lang.String">
+		select role_name from hisi_role where role_type!="通道出口（出X光机后）"
+	</select>
+	
+	<select id="getAllRoles"  resultMap="BaseResultMap">
+		select * from hisi_role where role_type!="通道出口（出X光机后）"
+	</select>
+	<delete id="deleteById" parameterType="java.lang.Integer">
+		DELETE
+		FROM
+		hisi_role
+		WHERE
+		id = #{id}
+	</delete>
+	<select id="getRoleTypeList_user" resultType="java.lang.String">
+		select DISTINCT role_name from hisi_role where role_type not in ("货代办公室（录入运单信息）","通道入口（进X光机前）","通道出口（进X光机后）")
+	</select>
+	<select id="getRoleTypeList_device" resultType="java.lang.String">
+		select DISTINCT role_name from hisi_role
+	</select>
+	<select id="getRoleTypeList_proxy" resultType="java.lang.String">
+		select DISTINCT role_name from hisi_role where role_type="货代办公室（录入运单信息）" ||
+		role_type="通道入口（进X光机前）"
+	</select>
+</mapper>

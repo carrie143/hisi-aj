@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hisi.mapper.HisiUnpackMapper">
+  <resultMap id="BaseResultMap" type="com.hisi.model.vo.HisiUnpackReturnInfo">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="tracking_number" jdbcType="VARCHAR" property="trackingNumber" />
+    <result column="unpacked_pic_access" jdbcType="VARCHAR" property="unpackedPicAccess" />
+    <result column="channel_id" jdbcType="VARCHAR" property="channelId" />
+    <result column="unpack_channel" jdbcType="VARCHAR" property="unpackChannel" />
+    <result column="unpack_account" jdbcType="VARCHAR" property="unpackAccount" />
+    <result column="time" jdbcType="TIMESTAMP" property="time" />
+  </resultMap>
+  <resultMap id="selectTrackingResultMap" type="com.hisi.model.vo.HisiTrackInfo">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="tracking_number" jdbcType="VARCHAR" property="trackingNumber" />
+    <result column="num" jdbcType="INTEGER" property="num" />
+    <result column="flight_id" jdbcType="VARCHAR" property="flightNo" />
+    <result column="carry_person" jdbcType="VARCHAR" property="carryPerson" />
+    <result column="check_person" jdbcType="VARCHAR" property="verifyPerson" />
+    <result column="proxy_name" jdbcType="VARCHAR" property="proxyName" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="start_time" jdbcType="TIMESTAMP" property="startTime" />
+    <result column="last_start_time" jdbcType="TIMESTAMP" property="lastStartTime" />
+    <result column="last_pause_time" jdbcType="TIMESTAMP" property="lastPauseTime" />
+  </resultMap>
+  
+    <select id="getUnpackPhoto" resultType="java.lang.String">
+  	select unpacked_pic_access from hisi_unpack
+  		<where>
+		tracking_number=#{orderId}
+			<if test="startTime!=null and startTime!='' and endTime!=null and endTime!=''">
+				and `time` BETWEEN #{startTime} and #{endTime} 
+			</if>
+		</where>
+  </select>
+  <select id="getUnpackAccount" resultType="java.lang.String">
+  	select unpack_account from hisi_unpack where tracking_number=#{orderId} limit 0,1
+  </select>
+<select id="selectByGlobal" resultMap="BaseResultMap">
+  	select * from hisi_unpack
+  		<where>
+  			 <if test="global!=null and global!=''">
+  			 	tracking_number like '%${global}%'
+  			 </if>
+  		</where>
+  	order by time desc
+  </select>
+  <select id="findOpenDetail" resultMap="BaseResultMap">
+    	select * from hisi_unpack where tracking_number=#{orderId}
+  </select>
+  <select id="selectTrackingPictures" resultType="java.lang.String">
+  	  select photo_path from hisi_orderinfo_photo where order_id=#{trackingNumber}
+  </select>
+  <select id="selectTracking" resultMap="selectTrackingResultMap">
+  	  select a.id,a.order_id as tracking_number,a.num,a.flight_id,a.carry_person,a.proxy_name,
+  	  a.check_person,a.create_time,a.start_time,b.start_time as last_start_time,a.last_pause_time 
+  	  as last_pause_time from hisi_orderinfo_basic a left join hisi_orderinfo_other b on a.order_id=
+  	  b.order_id where a.order_id=#{trackingNumber} order by b.start_time desc limit 0, 1
+  </select>
+  <update id="updateOrderBasisToUnpack">
+  	update hisi_orderinfo_basic set isUnpack=1,unpack_account=#{account} where order_id= #{trackingNumber}
+  </update>
+</mapper>

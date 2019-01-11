@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hisi.mapper.HisiDeviceMapper">
+	<resultMap id="BaseResultMap" type="com.hisi.model.HisiDevice">
+		<!-- WARNING - @mbg.generated -->
+		<id column="id" property="id" jdbcType="INTEGER" />
+		<result column="device_id" property="deviceId" jdbcType="VARCHAR" />
+		<result column="device_ip" property="deviceIp" jdbcType="VARCHAR" />
+		<result column="device_producer" property="deviceProducer"
+			jdbcType="VARCHAR" />
+		<result column="device_produce_date" property="deviceProduceDate"
+			jdbcType="TIMESTAMP" />
+		<result column="device_type" property="deviceType" jdbcType="VARCHAR" />
+		<result column="device_role" property="deviceRole" jdbcType="VARCHAR" />
+		<result column="channel_id" property="channelId" jdbcType="VARCHAR" />
+		<result column="device_status" property="deviceStatus"
+			jdbcType="VARCHAR" />
+	</resultMap>
+	
+<select id="selectRoleIdByIp" resultType="java.lang.Integer">
+		select a.id from hisi_role a LEFT JOIN hisi_device on device_role=role_name where device_ip=#{ip}
+	</select>
+	<select id="selectByChannelId" resultMap="BaseResultMap">
+		select
+		* from
+		hisi_device where channel_id=#{channelId}
+	</select>
+	<select id="selectRoleNameByIp" resultType="java.lang.String">
+		select device_role from 
+		hisi_device where  device_ip=#{ip}
+	</select>
+	<select id="findDeviceByStatus" resultMap="BaseResultMap">
+		select * from
+		hisi_device where device_status=#{status}
+	</select>
+
+	<select id="getChannelIdByIp" resultType="java.lang.String">
+		select channel_id from
+		hisi_device where device_ip=#{ip}
+	</select>
+	<select id="findDevice" resultMap="BaseResultMap">
+		select * from hisi_device
+		<where>
+			<if test="date!=null and date!=''"> 
+			and date(device_produce_date)= #{date}
+			</if>
+			<if test="role!=null and role!=''">
+				and device_role = #{role}
+			</if>
+			<if test="channelId!=null and channelId!=''">
+		    and channel_id = #{channelId} 
+		 </if>
+		 <if test="status!=null and status!=''">
+		    and device_status = #{status} 
+		 </if>
+			<if test="conditions!=null and conditions!=''">
+			 and (device_id like '%${conditions}%' or
+				device_ip like '%${conditions}%' or device_producer
+				like '%${conditions}%'
+				or device_type like '%${conditions}%') </if>
+		</where>
+	</select>
+	<!-- <select id="findDevice" resultMap="BaseResultMap"> select * from hisi_device 
+		where date(device_produce_date) = #{date} and device_role = #{role} and channel_id 
+		= #{channelId} and device_id like '%${conditions}%' or device_ip like '%${conditions}%' 
+		or device_producer like '%${conditions}%' or device_type like '%${conditions}%' 
+		</select> -->
+	<select id="findDeviceByDate" resultMap="BaseResultMap">
+		select *
+		from hisi_device
+		where device_produce_date=#{date}
+	</select>
+
+	<select id="findDeviceByRole" resultMap="BaseResultMap">
+		select *
+		from hisi_device
+		where device_role=#{role}
+	</select>
+
+	<select id="findDeviceByConditions" resultMap="BaseResultMap">
+		select * from
+		hisi_device where device_id like
+		CONCAT('%','${conditions}','%') or
+		device_ip like
+		CONCAT('%','${conditions}','%')
+		or device_producer like
+		CONCAT('%','${conditions}','%') or device_type like
+		CONCAT('%','${conditions}','%')
+	</select>
+</mapper>

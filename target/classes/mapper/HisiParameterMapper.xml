@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hisi.mapper.HisiParameterMapper" >
+  <resultMap id="BaseResultMap" type="com.hisi.model.HisiParameter" >
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="video_save_time" property="videoSaveTime" jdbcType="VARCHAR" />
+    <result column="photo_save_time" property="photoSaveTime" jdbcType="VARCHAR" />
+    <result column="Screen_interval_time" property="screenIntervalTime" jdbcType="VARCHAR" />
+  </resultMap>
+</mapper>

@@ -1,0 +1,99 @@
+package com.hisi.controller;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
+import org.apache.commons.httpclient.Header;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.NameValuePair;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.hisi.common.httpClient.HttpAPIService;
+import com.hisi.common.httpClient.HttpResult;
+import com.hisi.common.util.YfslResult;
+import com.hisi.service.CommonService;
+
+@RestController
+@RequestMapping("/common")
+@Api(value = "common", description = "通用方法")
+public class CommonController {
+
+	@Autowired
+	private CommonService commonService;
+    @Autowired
+    private HttpAPIService httpAPIService;
+	@ApiOperation(value = "图片上传", notes = "")
+	@ApiImplicitParam(name = "file", value = "图片文件", required = true, dataType = "CommonsMultipartFile")
+	@RequestMapping(value = "/upload", method = RequestMethod.POST)
+	public YfslResult upload(@RequestParam("file") CommonsMultipartFile file,
+			HttpServletRequest request,
+			@RequestParam(required = false) @ApiParam("图片所属模块") String filePath) {
+		String result = commonService.pictureUpload(file, request, filePath);
+		if (result == null)
+			return YfslResult.fail("图片上传失败");
+		return YfslResult.ok(result);
+	}
+
+	@ApiOperation(value = "图片批量上传", notes = "")
+	@ApiImplicitParam(name = "files", value = "图片文件", required = true, dataType = "CommonsMultipartFile[]")
+	@RequestMapping(value = "/uploads", method = RequestMethod.POST)
+	public YfslResult uploads(
+			@RequestParam("files") CommonsMultipartFile[] files,
+			HttpServletRequest request,
+			@RequestParam(required = false) @ApiParam("图片所属模块") String filePath) {
+		List<String> result = commonService.pictureUploads(files, request,
+				filePath);
+		if (result == null)
+			return YfslResult.fail("图片上传失败");
+		return YfslResult.ok(result);
+	}
+
+	@ApiOperation(value = "得到token")
+	@PostMapping("/httpclient")
+	public String getToken() throws Exception {
+		String token="";
+		token=token();
+		return token;
+	}
+	//项目启动时执行一次，执行完成后，间隔7天后再执行
+	@Scheduled(fixedDelay=1000*60*60*167)//7*24=168-1=167 
+	public String token() throws Exception{
+		String url = "https://open.ys7.com/api/lapp/token/get";
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("appKey", "0857676952e34e539de381fa7c416270");
+		map.put("appSecret", "542ecd8075141332dbe154e2e9b95070");
+		HttpResult postResult = httpAPIService.doPost(url, map);
+		String body = postResult.getBody();
+		String token = "";
+		body = body.replaceAll("\"", "\'");//把字符串的"替换成‘
+		body = "[" + body+"]";//凑成json格式 加上[]
+		List<JSONObject> list = JSON.parseArray(body, JSONObject.class);//转成json对象
+		for (JSONObject object : list) {
+			token = object.getJSONObject("data").getString("accessToken");//一层一层取值
+		}
+		return token;
+	}
+}

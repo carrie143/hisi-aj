@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hisi.mapper.HisiRoleMapper" >
+  <resultMap id="BaseResultMap" type="com.hisi.model.HisiRole" >
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="role_name" property="roleName" jdbcType="VARCHAR" />
+    <result column="id" property="id" jdbcType="INTEGER" />
+    <result column="role_desc" property="roleDesc" jdbcType="LONGVARCHAR" />
+  </resultMap>
+  
+   <update id="editRole">
+	update hisi_role
+	set role_name = #{roleName},
+	role_desc =#{roleDesc}
+	where id = #{id} 
+  	</update>
+  	
+  	  	 <delete id="deleteById" parameterType="java.lang.Integer">	 	
+		 	  DELETE
+				FROM
+					hisi_role
+			   WHERE
+					id = #{id}
+ 	 </delete>
+</mapper>

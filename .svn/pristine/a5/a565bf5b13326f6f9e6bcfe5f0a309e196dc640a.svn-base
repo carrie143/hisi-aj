@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hisi.mapper.HisiLoginRecordMapper">
+  <resultMap id="BaseResultMap" type="com.hisi.model.HisiLoginRecord">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="user_id" jdbcType="VARCHAR" property="userId" />
+    <result column="user_name" jdbcType="VARCHAR" property="userName" />
+    <result column="login_time" jdbcType="TIMESTAMP" property="loginTime" />
+    <result column="role_name" jdbcType="VARCHAR" property="roleName" />
+    <result column="channel_id" jdbcType="VARCHAR" property="channelId" />
+  </resultMap>
+
+<select id="findLoginUserNameByChannelId" parameterType="java.lang.String" resultType="java.lang.String">
+	select username from hisi_user a LEFT JOIN hisi_login_record b on user_id=userid where channel_id=#{channelId} and b.role_name="安检员" 
+ORDER BY login_time desc LIMIT 0,1
+</select>
+</mapper>

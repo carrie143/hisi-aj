@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hisi.mapper.HisiScreenshotPicMapper">
+  <resultMap id="BaseResultMap" type="com.hisi.model.HisiScreenshotPic">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="order_id" jdbcType="VARCHAR" property="orderId" />
+    <result column="channel_id" jdbcType="VARCHAR" property="channelId" />
+    <result column="pic_path" jdbcType="VARCHAR" property="picPath" />
+    <result column="timestamp" jdbcType="VARCHAR" property="timestamp" />
+  </resultMap>
+  	<select id="getScreenShotPhoto" resultType="java.lang.String">
+		select pic_path  from hisi_screenshot_pic where order_id=#{orderId}
+	</select>
+	
+	<select id="findSceenShotPhotoByTimeStamp" resultMap="BaseResultMap">
+		select * from hisi_screenshot_pic where order_id=#{orderId} and timestamp=#{timeStamp}
+	</select>
+</mapper>

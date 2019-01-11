@@ -1,0 +1,67 @@
+package com.hisi.service.impl;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.github.pagehelper.PageHelper;
+import com.hisi.mapper.HisiChannelMapper;
+import com.hisi.model.HisiChannel;
+import com.hisi.service.ChannelService;
+
+@Service
+public class ChannelServiceImpl implements ChannelService {
+	@Autowired
+	private HisiChannelMapper hisiChannelMapper;
+	@Override
+	public int insertChannel(HisiChannel hisiChannel) {
+		int i=hisiChannelMapper.insert(hisiChannel);
+		return i;
+	}
+	@Override
+	public List<HisiChannel> getAllChannel(Integer pageNum,Integer pageSize) {
+		PageHelper.startPage(pageNum,pageSize);
+		List<HisiChannel> hisiChannels = hisiChannelMapper.selectAll();
+		return hisiChannels;
+	}
+	@Override
+	public int deleteChannel(String channelId) {
+		int i=hisiChannelMapper.deleteById(channelId);
+		return i;
+	}
+	@Override
+	public int updateChannel(int id, String channelId, String channelAddress) {
+		int i=hisiChannelMapper.updateById(id,channelId,channelAddress);
+		return i;
+	}
+	@Override
+	public List<HisiChannel> getChannelByStatus(Integer pageNum,Integer pageSize,String status) {
+		PageHelper.startPage(pageNum,pageSize);
+		if(status.equals("全部")){
+			List<HisiChannel> hisiChannels = hisiChannelMapper.selectAll();
+			return hisiChannels;
+		}
+		if(status.equals("异常")){
+			List<HisiChannel> hisiChannels = hisiChannelMapper.selectByStatus(1);
+			return hisiChannels;
+		}
+		if(status.equals("正常")){
+			List<HisiChannel> hisiChannels = hisiChannelMapper.selectByStatus(0);
+			return hisiChannels;
+		}
+		return null;
+	}
+	@Override
+	public List<String> getALlChannelId() {
+		List<String> channelIds=hisiChannelMapper.getALlChannelId();
+		return channelIds;
+	}
+	@Override
+	public List<HisiChannel> findChannel(String channelId, String channelAddress) {
+		return hisiChannelMapper.findChannel(channelId,channelAddress);
+	}
+	
+	
+
+}

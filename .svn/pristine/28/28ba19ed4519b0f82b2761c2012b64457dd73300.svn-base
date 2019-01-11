@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hisi.mapper.HisiUnpackNecessaryPicMapper" >
+  <resultMap id="BaseResultMap" type="com.hisi.model.vo.HisiUnpackNecessaryPicReturnInfo" >
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="tracking_number" property="trackingNumber" jdbcType="VARCHAR" />
+    <result column="pic_access" property="picAccess" jdbcType="VARCHAR" />
+    <result column="unpack" property="unpack" jdbcType="INTEGER" />
+    <result column="channel_id" property="channelId" jdbcType="VARCHAR" />
+    <result column="verify_account" property="verifyAccount" jdbcType="VARCHAR" />
+    <result column="time" property="time" jdbcType="TIMESTAMP" />
+  </resultMap>
+  <resultMap id="selectTrackingNowResultMap" type="com.hisi.model.vo.HisiTrackInfo">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="tracking_number" jdbcType="VARCHAR" property="trackingNumber" />
+    <result column="num" jdbcType="INTEGER" property="num" />
+    <result column="carry_person" jdbcType="VARCHAR" property="carryPerson" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="start_time" jdbcType="TIMESTAMP" property="startTime" />
+    <result column="last_start_time" jdbcType="TIMESTAMP" property="lastStartTime" />
+    <result column="last_end_time" jdbcType="TIMESTAMP" property="lastEndTime" />
+  </resultMap>
+  <select id="selectByChannelIdAndUnpack" resultMap="BaseResultMap">
+  	select * from hisi_unpack_necessary_pic where unpack=-1 and channel_id=#{channelId} order by time desc
+  </select>
+  <update id="updateUnpackById">
+  	update hisi_unpack_necessary_pic set unpack = 1 where id= #{unpackVerifyPicId}
+  </update>
+  <select id="selectTrackingNow" resultMap="selectTrackingNowResultMap">
+  	select a.id,a.order_id as tracking_number,a.num, a.carry_person,a.create_time,
+  	a.start_time,b.start_time as last_start_time,b.end_time as last_end_time from 
+  	hisi_orderinfo_basic a left join hisi_orderinfo_other b on a.order_id=b.order_id where 
+  	a.channel_id=#{channelId} and b.start_time is not null and b.end_time is null and b.pause_time is null
+  </select>
+</mapper>

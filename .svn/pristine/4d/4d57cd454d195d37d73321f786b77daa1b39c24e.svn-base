@@ -1,0 +1,287 @@
+package com.hisi.controller;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authc.AuthenticationException;
+import org.apache.shiro.authc.UsernamePasswordToken;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.subject.Subject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.hisi.common.util.PasswordUtil;
+import com.hisi.common.util.UserVo;
+import com.hisi.common.util.YfslResult;
+import com.hisi.common.websocket.WebSocketService;
+import com.hisi.model.HisiDepartment;
+import com.hisi.model.HisiLoginRecord;
+import com.hisi.model.HisiUser;
+import com.hisi.model.vo.InfoVo;
+import com.hisi.service.DeviceService;
+import com.hisi.service.LoginService;
+import com.hisi.service.RoleService;
+import com.hisi.service.UserService;
+@RestController
+@Api(value = "HisiUser", description = "员工登录")
+public class LoginController {
+
+	@Autowired
+	private  LoginService loginService;
+	@Autowired
+	private UserService userService;
+	@Autowired
+	private DeviceService deviceService;
+	@Autowired
+	private RoleService roleService;
+	@Value("${localhost}")
+	private String localhost;
+	@Value("${addUserPath}")
+	private String addUserPath;
+	@Value("${loginPath}")
+	private String loginPath;
+	@Autowired
+	private WebSocketService webSocketService;
+	@ApiOperation(value = "刷卡登录", httpMethod = "POST")
+	@PostMapping(value = "/cardLogin")
+	public YfslResult cardLogin(@RequestParam String cardId,HttpServletRequest request) {
+		String ip = request.getRemoteAddr();// 登录的当前机器的ip（判断角色）
+		if (ip.equals("0:0:0:0:0:0:0:1")) {
+			ip = localhost;// 本机ip
+		}
+		String channelId=deviceService.getChannelIdByIp(ip);
+		String deviceRoleName = deviceService.selectRoleNameByIp(ip);// 设备角色
+		if(channelId==null||deviceRoleName==null){
+			return YfslResult.fail("该设备信息配置不完整");
+		}
+		HisiUser user=userService.findProxyByCardId(cardId);
+		if(user==null){
+			return YfslResult.fail("无该卡片用户");
+		}
+		String userRoleName = user.getRoleName();// 可能为空
+		if(deviceRoleName.equals(userRoleName)){//登录成功
+			return successLogin(request,user.getUserid(),user.getPassword1(),user.getRoleName(),channelId);
+		}
+		return YfslResult.fail("该卡片无权限登录");
+	}
+	@ApiOperation(value = "用户名密码登录", httpMethod = "POST", response = YfslResult.class, notes = "传统登录")
+	@PostMapping(value = "/acountLogin",headers = "Content-Type=application/json")
+	public YfslResult acountLogin(@RequestBody Map<String, String> map,HttpServletRequest request) {
+		String userId = map.get("userId");
+		String password = map.get("password");
+		String ip = request.getRemoteAddr();// 登录的当前机器的ip（判断角色）
+		if (ip.equals("0:0:0:0:0:0:0:1")) {
+			ip = localhost;// 本机ip
+		}
+		String channelId=deviceService.getChannelIdByIp(ip);
+		if(channelId==null){
+			return YfslResult.fail("该设备信息配置不完整");
+		}
+		HisiUser hisiUser = userService.findUserByUserId(userId);
+		if(hisiUser!=null){
+		if (hisiUser.getStaus() == null || hisiUser.getStaus() == 1) {
+			return YfslResult.fail("用户被屏蔽");
+		}
+		String userRoleName = hisiUser.getRoleName();//可能为空 。不传字段是null，传""是（），看前端是怎么传的？
+		String userRoleType;
+		if(userRoleName==null){
+			 userRoleType=null;
+		}else{
+			 userRoleType=roleService.findRoleTypeByName(userRoleName);
+		}
+		String deviceRoleName = deviceService.selectRoleNameByIp(ip);// 设备角色 也可能为空
+		String deviceRole = deviceService.selectRoleTypeByIp(ip);
+		if(deviceRole.equals("机场办公室（配置及查询运单信息）")||deviceRole.equals("货代办公室（录入运单信息）")||
+				deviceRole.equals("通道入口（进X光机前）")){
+			if(userRoleType.equals("机场办公室（配置及查询运单信息）")){
+				return successLogin(request, userId, password,deviceRoleName,channelId);
+			}
+			else if(deviceRole.equals(userRoleType)){
+				return successLogin(request, userId, password,userRoleName,channelId);
+			}else{
+				return YfslResult.fail("无权限登录");
+			}
+		}
+		else{//现场机器
+			if(userRoleType.equals("货代办公室（录入运单信息）")||userRoleType.equals("通道入口（进X光机前）")){
+				return YfslResult.fail("无权限登录");
+			}
+			else{
+				return successLogin(request, userId, password,deviceRoleName,channelId);
+			}
+		}
+	}
+		return YfslResult.fail("登录失败");
+	}
+	// ,headers ="Content-Type=application/json"
+	// Content-Type=application/x-www-form-urlencoded
+	@ApiOperation(value = "人脸识别登录", httpMethod = "POST", response = YfslResult.class, notes = "人脸识别登录对比图片")
+	@RequestMapping(value = "/image/compare", method = RequestMethod.POST, headers = "Content-Type=application/json")
+	public YfslResult compareImage(
+			@ApiParam(name = "Map", value = "接收base64字符串", required = true) @RequestBody Map<String, String> map,
+			HttpServletRequest request) throws Exception {
+		UserVo uservo = new UserVo();
+		String imageUrl = map.get("imageUrl");
+		imageUrl = imageUrl.substring(22);
+		if (imageUrl == null) {
+			return YfslResult.fail("图片为空");
+		}
+		// 把图片保存到本地
+		byte[] b =Base64.getDecoder().decode(imageUrl);
+		for (int i = 0; i < b.length; ++i) {
+			if (b[i] < 0) {
+				b[i] += 256;
+			}
+		}
+		//String imgFilePath = "E:\\login";
+		String imgFilePath = loginPath;
+		String fileName = getExtension() + ".png";
+		//String path = imgFilePath + "\\" + fileName;
+		String path = imgFilePath + "/" + fileName;
+		OutputStream out = new FileOutputStream(path);
+		out.write(b);
+		out.flush();
+		out.close();
+		uservo = loginService.compareImage(path);
+		String userId = uservo.getUserId();
+		String password = uservo.getPassword();//原始密码
+		if (uservo != null && uservo.getScore() > 0.6) {
+			//System.out.println("图片对比成功");
+			HisiUser user = loginService.selectStatus(userId);
+			if (user.getStaus() == null || user.getStaus() == 1) {
+				return YfslResult.fail("用户被屏蔽");
+			}
+			String ip = request.getRemoteAddr();// 登录的当前机器的ip（判断角色）
+			if (ip.equals("0:0:0:0:0:0:0:1")) {
+				ip = localhost;// 本机ip
+			}
+			String channelId=deviceService.getChannelIdByIp(ip);
+			if(channelId==null){
+				return YfslResult.fail("该设备信息配置不完整");
+			}
+			HisiUser hisiUser = userService.findUserByUserId(userId);
+			String userRoleName = hisiUser.getRoleName();// 可能为空
+			String deviceRoleName = deviceService.selectRoleNameByIp(ip);// 设备角色
+			String userRoleType=roleService.findRoleTypeByName(userRoleName);
+			String deviceRole = deviceService.selectRoleTypeByIp(ip);
+			if(deviceRole.equals("机场办公室（配置及查询运单信息）")){
+				if(deviceRole.equals(userRoleType)){
+					return successLogin(request, userId, password,deviceRoleName,channelId);
+				}else{
+					return YfslResult.fail("无权限登录");
+				}
+			}else{
+				return successLogin(request, userId, password,deviceRoleName,channelId);
+			}
+		}
+		return YfslResult.fail("图片匹配失败");
+	}
+	public  YfslResult successLogin(HttpServletRequest request,
+			String userId, String password,String userRoleName,String channelId) {
+		Subject currentUser = SecurityUtils.getSubject();
+		Session session = currentUser.getSession();
+		if (!currentUser.isAuthenticated()) {
+			// 把用户名和密码封装为 UsernamePasswordToken 对象
+			UsernamePasswordToken token = new UsernamePasswordToken(userId,
+					password);
+			token.setRememberMe(true);
+			try {
+				// 执行登录
+				currentUser.login(token);
+			}
+			// 所有认证时异常的父类.
+			catch (AuthenticationException ae) {
+				System.out.println("登录失败: " + ae.getMessage());
+				return YfslResult.fail("登录失败");
+			}
+		}
+		System.out.println("accountLogin  sessionId:"+session.getId());
+		session.setAttribute("userId", userId);
+		String userName=userService.getUserName(userId);
+		//现场监控处的安检员上线提示
+		if(userRoleName.equals("安检员")||userRoleName.equals("开包员")){
+			List<String> users = new ArrayList<String>();
+			users.add(channelId);
+			InfoVo infoVo=new InfoVo();
+			infoVo.setUserName(userName);
+			infoVo.setRoleName(userRoleName);
+			webSocketService.send2Users2(users, infoVo);
+		}
+		if(userRoleName.equals("货代录入员")||userRoleName.equals("操机员")){
+			
+		}
+		else{
+			HisiDepartment hisiDepartment = userService.getDepartmentId(userId);
+			if(hisiDepartment==null){
+				//没有部门信息不操作
+			}else{
+				session.setAttribute("departmentId", hisiDepartment.getId());
+			}
+		}
+		PasswordUtil passwordUtil = new PasswordUtil();
+		Object password1 = passwordUtil.generateScret(userId, password);// 加密过的密码
+		String SecretPassword = password1.toString();
+		session.setAttribute("password", SecretPassword);
+		session.setAttribute("channelId", channelId);
+		Date loginTime =new Date();
+		HisiLoginRecord loginRecord =new HisiLoginRecord();
+		loginRecord.setChannelId(channelId);
+		loginRecord.setLoginTime(loginTime);
+		loginRecord.setRoleName(userRoleName);
+		int roleId=roleService.getRoleId(userRoleName);
+		loginRecord.setUserId(userId);
+		loginRecord.setRoleId(roleId);
+		loginRecord.setUserName(userName);
+		int i=loginService.addLoginRecord(loginRecord);
+		if(i>0){
+			return YfslResult.ok(loginRecord);
+		}
+		return YfslResult.fail("登录记录插入失败");
+	}
+	@ApiOperation(value = "登出", httpMethod = "GET")
+	@RequestMapping(value = "/shrio/logout", method = RequestMethod.GET)
+	public YfslResult logout(HttpServletRequest request) {
+		Subject subject = SecurityUtils.getSubject();
+		System.out.println("logout sessionId:"+subject.getSession().getId());
+		subject.logout();
+		/*System.out.println("logout sessionId:"+request.getSession().getId());
+		request.getSession().invalidate();*/
+		return YfslResult.ok();
+	}
+
+	public static String getExtension() throws Exception {
+		try {
+			// 线程睡会<br>
+			Thread.sleep(1);
+			// 生成日期实体<br>
+			Calendar calendar = Calendar.getInstance();
+			String extension = calendar.getTime().getTime() + "";
+			return extension;// 专网及EZVP公网<br>
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+}

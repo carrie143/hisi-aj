@@ -1,0 +1,7 @@
+package com.hisi.mapper;
+
+import com.hisi.common.util.MyMapper;
+import com.hisi.model.HisiPermission;
+
+public interface HisiPermissionMapper extends MyMapper<HisiPermission> {
+}

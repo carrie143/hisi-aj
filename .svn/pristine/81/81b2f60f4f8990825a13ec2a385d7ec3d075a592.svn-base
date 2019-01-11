@@ -1,0 +1,21 @@
+package com.hisi.model.vo;
+
+import com.sun.corba.se.spi.orb.StringPair;
+
+public class FileVo {
+	String[] paths;
+	String savePath;
+	public String[] getPaths() {
+		return paths;
+	}
+	public void setPaths(String[] paths) {
+		this.paths = paths;
+	}
+	public String getSavePath() {
+		return savePath;
+	}
+	public void setSavePath(String savePath) {
+		this.savePath = savePath;
+	}
+	
+}

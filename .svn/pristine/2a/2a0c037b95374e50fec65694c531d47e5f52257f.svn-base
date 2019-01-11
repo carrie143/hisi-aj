@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hisi.mapper.HisiChannelMapper">
+	<resultMap id="BaseResultMap" type="com.hisi.model.HisiChannel">
+		<!-- WARNING - @mbg.generated -->
+		<id column="id" property="id" jdbcType="INTEGER" />
+		<result column="channel_id" property="channelId" jdbcType="VARCHAR" />
+		<result column="channel_address" property="channelAddress"
+			jdbcType="VARCHAR" />
+		<result column="channel_status" property="channelStatus"
+			jdbcType="INTEGER" />
+	</resultMap>
+	<delete id="deleteById" parameterType="java.lang.String">
+		DELETE
+		FROM
+		hisi_channel
+		WHERE
+		channel_id = #{channelId}
+	</delete>
+	<update id="updateById">
+		update hisi_channel
+		set channel_id = #{channelId},
+		channel_address =#{channelAddress}
+		where id = #{id}
+	</update>
+
+	<select id="selectByStatus" parameterType="java.lang.Integer"
+		resultMap="BaseResultMap">
+		select * from hisi_channel where channel_status=#{i}
+	</select>
+
+	<select id="getALlChannelId" resultType="java.lang.String">
+		select channel_id from
+		hisi_channel
+	</select>
+</mapper>

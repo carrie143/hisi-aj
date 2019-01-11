@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hisi.mapper.HisiProxyMapper" >
+  <resultMap id="BaseResultMap" type="com.hisi.model.HisiProxy" >
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="proxy_id" property="proxyId" jdbcType="VARCHAR" />
+    <result column="password" property="password" jdbcType="VARCHAR" />
+    <result column="proxy_name" property="proxyName" jdbcType="VARCHAR" />
+    <result column="manager" property="manager" jdbcType="VARCHAR" />
+    <result column="telphone" property="telphone" jdbcType="VARCHAR" />
+    <result column="role_name" property="roleName" jdbcType="VARCHAR" />
+  </resultMap>
+    	<select id="findProxyByCondition" resultMap="BaseResultMap">
+		select * from hisi_proxy where
+			 proxy_id like '%${condition}%' or
+				proxy_name like '%${condition}%' or manager
+				like '%${condition}%'
+				or telphone like '%${condition}%'
+	</select>
+<select id="selectProxyByProxyId" resultMap="BaseResultMap">
+		select * from hisi_proxy where
+			 proxy_id=#{proxyId}
+	</select>
+		<update id="updatePassword" parameterType="java.lang.String">
+		update hisi_proxy
+		set
+		password = #{newPassword,jdbcType=VARCHAR}
+		where proxy_id =
+		#{proxyId,jdbcType=VARCHAR}
+	</update>
+</mapper>

@@ -1,0 +1,462 @@
+package com.hisi.controller;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.subject.Subject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+
+import com.github.pagehelper.PageInfo;
+import com.hisi.common.file.FtpUtils;
+import com.hisi.common.util.DateUtil;
+import com.hisi.common.util.DateUtil.Pattern;
+import com.hisi.common.util.ListSort;
+import com.hisi.common.util.NameUtil;
+import com.hisi.common.util.YfslResult;
+import com.hisi.common.websocket.WebSocketService;
+import com.hisi.model.HisiCarryPerson;
+import com.hisi.model.HisiOrderinfoBasic;
+import com.hisi.model.HisiOrderinfoOther;
+import com.hisi.model.HisiOrderinfoPhoto;
+import com.hisi.model.HisiUnpack;
+import com.hisi.model.HisiUnpackNecessaryPic;
+import com.hisi.model.OrderVo;
+import com.hisi.model.vo.CheckVo;
+import com.hisi.model.vo.InfoVo;
+import com.hisi.model.vo.SceneOrderVo;
+import com.hisi.service.DeviceService;
+import com.hisi.service.LoginService;
+import com.hisi.service.OrderService;
+import com.hisi.service.UnpackService;
+import com.hisi.service.UserService;
+
+@RestController
+@RequestMapping("order")
+@Api(description = "运单验证")
+public class OrderController {
+	@Value("${ftp.ip}")
+	private String ftpHostname;
+	@Value("${ftp.port}")
+	private Integer ftpPort;
+	@Value("${ftp.account}")
+	private String ftpUsername;
+	@Value("${ftp.password}")
+	private String ftpPassword;
+	@Value("${ftp.basePath}")
+	private String ftpBasePath;
+	@Value("${ftp.pic}")
+	private String imagesPath;
+	@Value("${localhost}")
+	private String localhost;
+	@Autowired
+	private OrderService orderService;
+	@Autowired
+	private DeviceService deviceService;
+	@Autowired
+	private LoginService loginService;
+	@Autowired
+	private WebSocketService webSocketService;
+	@Autowired
+	private UnpackService unpackService;
+	@Autowired
+	private UserService userService;
+	@ApiOperation(value = "查看详情", httpMethod = "GET", response = YfslResult.class, notes = "查看详情")
+	@GetMapping(value = "/findDetail")
+	public List findDetail(@ApiParam(name="orderId",value="运单号",required=true)String orderId) throws Exception {
+		List<HisiOrderinfoOther> orderinfoOthers=orderService.findDetail(orderId);
+		List<HisiUnpack> hisiUnpacks=orderService.findOpenDetail(orderId);
+		List<CheckVo> checkVos=new ArrayList<CheckVo>();
+		SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		for(int i=0;i<orderinfoOthers.size();i++){
+			HisiOrderinfoOther orderOther = orderinfoOthers.get(i);
+			Date startTime = orderOther.getStartTime();
+			Date pauseTime = orderOther.getPauseTime();
+			Date endTime = orderOther.getEndTime();
+			//String startDate=sdf.format(startTime);
+			//开始安检
+			CheckVo checkVo=new CheckVo();
+			CheckVo checkVo1=new CheckVo();
+			checkVo.setTime(startTime);
+			checkVo.setInfo("第"+(i+1)+"次开始安检");//+"--"+startDate
+			checkVo.setStatus("开始");
+			checkVo.setPeople(null);
+			//暂停安检
+			if(endTime==null){
+				checkVo1.setTime(pauseTime);
+				//String pausedate=sdf.format(pauseTime);
+				checkVo1.setInfo("第"+(i+1)+"次暂停安检");//+"--"+pausedate
+				checkVo1.setStatus("暂停");
+				checkVo1.setPeople(null);
+			}else{//结束安检
+				//String endDate=sdf.format(endTime);
+				checkVo1.setTime(endTime);
+				checkVo1.setInfo("结束安检");//+"--"+endDate
+				checkVo1.setStatus("结束");
+				checkVo1.setPeople(null);
+			}
+			checkVos.add(checkVo);
+			checkVos.add(checkVo1);
+		}
+		for(int j=0;j<hisiUnpacks.size();j++){
+			CheckVo checkVo2=new CheckVo();
+			checkVo2.setTime(hisiUnpacks.get(j).getTime());
+			//String pausedate=sdf.format(hisiUnpacks.get(j).getTime());
+			checkVo2.setInfo("第"+(j+1)+"次开包");//+pausedate
+			checkVo2.setStatus("开包");
+			checkVo2.setPeople(hisiUnpacks.get(j).getUnpackAccount());
+			checkVos.add(checkVo2);
+		}
+		//根据时间排序开始暂停开包等流程
+		ListSort listSort=new ListSort();
+		listSort.ListSort(checkVos);
+		List<HisiOrderinfoPhoto> photo = orderService.getPhoto(orderId);
+		for(int j=0;j<photo.size();j++){
+			String photoPath = photo.get(j).getPhotoPath();
+			String photoPath1=imagesPath+photoPath;
+			photo.get(j).setPhotoPath(photoPath1);
+		}
+		List list=new ArrayList();
+		list.add(checkVos);
+		list.add(photo);
+		return list;
+	}
+	@ApiOperation(value = "查找运单-现场", httpMethod = "POST", response = YfslResult.class, notes = "查找前天的运单")
+	@PostMapping(value = "/findOrder_site")
+	public List<OrderVo> findOrder_site(
+			@ApiParam("创建日期")@RequestParam(required = false) String createTime,
+			@ApiParam("前天")@RequestParam(required = false) String qiantian,
+			@ApiParam("航班号")@RequestParam(required = false) String[] flightIds,
+			@ApiParam("多条件")@RequestParam(required = false) String conditions,
+			HttpServletRequest request) throws Exception{
+		String ip = request.getRemoteAddr();// 登录的当前机器的ip（判断角色）
+		if (ip.equals("0:0:0:0:0:0:0:1")) {
+			ip = localhost;// 本机ip
+        }
+		String channelId=deviceService.getChannelIdByIp(ip);
+		List<OrderVo> orderVos = orderService.findOrder_site(createTime,qiantian,flightIds,conditions,channelId);
+		for(int i=0;i<orderVos.size();i++){
+			String orderId = orderVos.get(i).getOrderId();
+			List<HisiOrderinfoPhoto> photo = orderService.getPhoto(orderId);
+			for(int j=0;j<photo.size();j++){
+				String photoPath = photo.get(j).getPhotoPath();
+				String photoPath1=imagesPath+photoPath;
+				photo.get(j).setPhotoPath(photoPath1);
+			}
+			orderVos.get(i).setPhotos(photo);
+		}
+		return orderVos;
+	}
+	@ApiOperation(value = "查找运单-办公室", httpMethod = "POST", response = YfslResult.class, notes = "查找前天的运单")
+	@PostMapping(value = "/findOrder_office")
+	public YfslResult findOrder_office(@ApiParam("页数，首页为1") @RequestParam(required = true)  int pageNum,
+			@ApiParam("每页数据条数") @RequestParam(required = true)  int pageSize,
+			@ApiParam("创建日期")@RequestParam(required = false) String createTime,
+			@ApiParam("通道号")@RequestParam(required = false) String channelId,
+			@ApiParam("多条件")@RequestParam(required = false) String conditions){
+		try {
+			List<HisiOrderinfoBasic> re=orderService.findOrder_office(pageNum,pageSize,createTime,channelId,conditions);
+			return YfslResult.ok(new PageInfo<HisiOrderinfoBasic>(re));
+		} catch (Exception e) {
+			return YfslResult.fail(e.getMessage());
+		}
+	}
+	
+	@ApiOperation(value = "删除运单", httpMethod = "POST", response = YfslResult.class, notes = "删除运单")
+	@PostMapping(value = "/deleteOrder",headers = "Content-Type=application/json")
+	public YfslResult deleteOrder(@RequestBody Map<String, String> map) {
+		//int id=Integer.parseInt(id1);
+		String orderId=map.get("orderId");
+		int i=orderService.deleteUser(orderId);
+		int m=orderService.deleteOther(orderId);
+		int n=orderService.deletePath(orderId);
+		if(i>0){
+			return YfslResult.ok();
+		}
+		return YfslResult.fail("删除失败");
+		
+	}
+	@ApiOperation(value = "得到运单列表-现场", httpMethod = "GET", response = YfslResult.class, notes = "得到运单列表")
+	@GetMapping(value = "/getOrder_site")
+	public List<OrderVo> getOrder_site(HttpServletRequest request) throws Exception {
+		String ip = request.getRemoteAddr();// 登录的当前机器的ip（判断角色）
+		if (ip.equals("0:0:0:0:0:0:0:1")) {
+			ip = localhost;// 本机ip
+        }
+		String channelId=deviceService.getChannelIdByIp(ip);
+		List<OrderVo> orderVos=orderService.getOrder_site(channelId);
+		for(int i=0;i<orderVos.size();i++){
+			String orderId = orderVos.get(i).getOrderId();
+			List<HisiOrderinfoPhoto> photo = orderService.getPhoto(orderId);
+			for(int j=0;j<photo.size();j++){
+				String photoPath = photo.get(j).getPhotoPath();
+				String photoPath1=imagesPath+photoPath;
+				photo.get(j).setPhotoPath(photoPath1);
+			}
+			orderVos.get(i).setPhotos(photo);
+		}
+		return orderVos;
+	}
+	@ApiOperation(value = "得到运单列表-办公室", httpMethod = "GET", response = YfslResult.class, notes = "得到运单列表-办公室")
+	@GetMapping(value = "/getOrder_office")
+	public YfslResult getOrder_office(@RequestParam(required = true) @ApiParam("页数，首页为1") int pageNum,
+			@RequestParam(required = true) @ApiParam("每页数据条数") int pageSize) throws Exception {
+		try {
+			List<HisiOrderinfoBasic> hisiOrderinfoBasics=orderService.selectAllByPage(pageNum,pageSize);
+			return YfslResult.ok(new PageInfo<HisiOrderinfoBasic>(hisiOrderinfoBasics));
+		} catch (Exception e) {
+			return YfslResult.fail(e.getMessage());
+		}
+	}
+	@ApiOperation(value = "点击编辑按钮", httpMethod = "GET", response = YfslResult.class, notes = "点击编辑按钮")
+	@GetMapping(value = "/getPhoto")
+	public List<HisiOrderinfoPhoto> getPhoto(@ApiParam(name="orderId",value="订单号",required=true)String orderId) {
+		 List<HisiOrderinfoPhoto> photo = orderService.getPhoto(orderId);
+		 for(int i=0;i<photo.size();i++){
+			 String photoPath = photo.get(i).getPhotoPath();
+			 String photoPath1=imagesPath+photoPath;
+			 photo.get(i).setPhotoPath(photoPath1);
+		 }
+		 return photo;
+	}
+	
+	@ApiOperation(value = "开始安检", httpMethod = "POST", response = YfslResult.class, notes = "开始安检")
+	@RequestMapping(value = "/startCheck", method = RequestMethod.POST,headers ="Content-Type=application/json")
+	// @ApiParam(name="orderId",value="运单id",required=true)@RequestParam String orderId application/x-www-form-urlencoded
+	public YfslResult startCheck(@RequestBody Map<String,String> map,HttpServletRequest request) {
+		Date date =new Date();
+		/*HttpSession session = request.getSession();
+		System.out.println("new sessionId:"+session.getId());
+		String channelId=(String) session.getAttribute("channelId");//得到当前电脑所在通道号
+*/		//String channelId="001";
+		//System.out.println("new sessionId:"+session.getId());
+		String ip = request.getRemoteAddr();// 登录的当前机器的ip（判断角色）
+		if (ip.equals("0:0:0:0:0:0:0:1")) {
+			ip = localhost;// 本机ip
+		}
+		String channelId=deviceService.getChannelIdByIp(ip);
+		if(channelId==null){
+			return YfslResult.fail("请确认通道号");
+		}
+		String orderId = map.get("orderId");
+		HisiOrderinfoBasic basic=orderService.findByOrderId(orderId);
+		//第一次开始安检
+		if(basic.getStartTime()==null){
+			int i=orderService.updateStartTime(orderId,date,channelId);//确定并插入运单的通道号
+			int j=orderService.addOther(orderId,date,channelId);
+			if(i>0&&j>0){
+				List<String> users = new ArrayList<String>();
+				users.add(channelId);
+				HisiOrderinfoBasic basicNew=orderService.findByOrderId(orderId);
+				webSocketService.send2Users3(users, basicNew);
+				return YfslResult.ok();
+			}
+			return YfslResult.fail("失败");
+		}else{//不是第一次安检
+			int j=orderService.addOther(orderId,date,channelId);
+			int i=orderService.updateStatus(orderId);
+			if(j>0&&i>0){
+				List<String> users = new ArrayList<String>();
+				users.add(channelId);
+				HisiOrderinfoBasic basicNew=orderService.findByOrderId(orderId);
+				webSocketService.send2Users3(users, basicNew);
+				return YfslResult.ok();
+			}
+			return YfslResult.fail("失败");
+		}
+	}
+	@ApiOperation(value = "暂停安检", httpMethod = "POST", response = YfslResult.class, notes = "暂停安检")
+	@RequestMapping(value = "/pauseCheck", method = RequestMethod.POST)
+	public YfslResult pauseCheck(@RequestBody Map<String,String> map) {
+		Date date =new Date();
+		String orderId = map.get("orderId");
+		HisiOrderinfoBasic order = orderService.findByOrderId(orderId);
+		int i=orderService.updatePauseTime(orderId,date);
+		int m=orderService.updateOtherPauseTime(orderId,date);
+		if(i>0&&m>0){
+			List<String> users = new ArrayList<String>();
+			users.add(order.getChannelId());
+			HisiOrderinfoBasic basicNew=new HisiOrderinfoBasic();
+			webSocketService.send2Users3(users, basicNew);
+			return YfslResult.ok();
+		}
+		return YfslResult.fail("失败");
+	}
+	@ApiOperation(value = "结束安检", httpMethod = "POST", response = YfslResult.class, notes = "结束安检")
+	@RequestMapping(value = "/endCheck", method = RequestMethod.POST)
+	public YfslResult endCheck(@RequestBody Map<String,String> map,HttpServletRequest request) {
+		String ip = request.getRemoteAddr();// 登录的当前机器的ip（判断角色）
+		if (ip.equals("0:0:0:0:0:0:0:1")) {
+			ip = localhost;// 本机ip
+		}
+		String channelId=deviceService.getChannelIdByIp(ip);
+		String userName=loginService.findLoginUserNameByChannelId(channelId);
+		Date date =new Date();
+		String orderId = map.get("orderId");
+		List<HisiUnpackNecessaryPic> necessaryPic=unpackService.findNecessaryPic(orderId,channelId);
+		if(!necessaryPic.isEmpty()){
+			return YfslResult.fail("该订单还未安检结束");
+		}else{
+			int i=orderService.updateEndTime(orderId,date,userName);
+			//插入安检人员
+			int j=orderService.updateOtherEndTime(orderId,date,userName);
+			if(i>0&&j>0){
+				List<String> users = new ArrayList<String>();
+				users.add(channelId);
+				HisiOrderinfoBasic basicNew=new HisiOrderinfoBasic();
+				webSocketService.send2Users3(users, basicNew);
+				return YfslResult.ok();
+			}
+			return YfslResult.fail("失败");
+		}
+	}
+	@ApiOperation(value = "编辑运单", httpMethod = "POST", response = YfslResult.class, notes = "编辑运单")
+	@RequestMapping(value = "/editOrder", method = RequestMethod.POST)
+	public YfslResult editOrder(HttpServletRequest req,@RequestParam(value="ids",required=false) Integer[] ids) throws Exception {
+		MultipartHttpServletRequest request= (MultipartHttpServletRequest) req;
+		List<MultipartFile> files = ((MultipartHttpServletRequest) request).getFiles("file");//新上传的图片
+		int id =Integer.parseInt(request.getParameter("id"));
+		String orderId = request.getParameter("orderId");
+		String filghtId = request.getParameter("flightId");
+		int num = Integer.parseInt(request.getParameter("num"));
+		String carryPerson = request.getParameter("carryPerson");
+		Date date=new Date();
+		if(ids!=null){
+			for(int i=0;i<ids.length;i++){
+				int n=orderService.deleteUnUsePath(ids[i]);
+			}
+		}
+		int m=orderService.editOrder(id,orderId,filghtId,num,carryPerson,date);
+		//上传图片
+		String basePath="order"; 
+		FtpUtils ftp=new FtpUtils(ftpHostname,ftpPort,ftpUsername,ftpPassword,ftpBasePath);
+		if(files.size()!=0){
+			for(int i=0;i<files.size();i++){
+				MultipartFile file = files.get(i);
+				String nameEnd = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf(".")+1);
+				String fileName1=NameUtil.getExtension()+"."+nameEnd;
+				String filePath=basePath+"/"+DateUtil.getSysTime(Pattern.PATTERN_4);
+				boolean flag=false;
+				//上传到服务器
+				flag=ftp.uploadFile(filePath,fileName1,file.getInputStream());
+				if(!flag){
+					return YfslResult.fail("失败");
+				}
+				String returnPath=filePath+"/"+fileName1;
+				
+				int n=orderService.savePath(orderId,returnPath);
+			}
+		}
+		if(m>0){
+			return YfslResult.ok();
+		}
+		return YfslResult.fail("失败");
+	}
+	@ApiOperation(value = "新增运单", httpMethod = "POST", response = YfslResult.class, notes = "新增运单")
+	@RequestMapping(value = "/addOrder", method = RequestMethod.POST)
+	public YfslResult addUser(HttpServletRequest req,HttpServletRequest servletRequest) throws Exception {
+		Subject currentUser = SecurityUtils.getSubject();
+		Session session = currentUser.getSession();
+		String userId=(String) session.getAttribute("userId");
+		String userName=userService.getUserName(userId);
+		//String userName="andy";
+		MultipartHttpServletRequest request= (MultipartHttpServletRequest) req;
+		List<MultipartFile> files = ((MultipartHttpServletRequest) request).getFiles("file");
+		String orderId = request.getParameter("orderId");
+		String flightId = request.getParameter("flightId");
+		String num1 = request.getParameter("num");
+		HisiOrderinfoBasic hisiOrderinfoBasic = orderService.findByOrderId(orderId);
+		if (hisiOrderinfoBasic != null) {
+			return YfslResult.fail("该id已存在");
+		}
+		if(num1==null){
+			return YfslResult.fail("货物数量为空");
+		}
+		int num = Integer.parseInt(num1);
+		String carryPerson = request.getParameter("carryPerson");
+		Date date=new Date();
+		HisiOrderinfoBasic order=new HisiOrderinfoBasic();
+		order.setOrderId(orderId);
+		order.setFlightId(flightId);
+		order.setNum(num);
+		order.setCarryPerson(carryPerson);
+		order.setProxyName(userName);
+		order.setCreateTime(date);
+		order.setStatus(0);
+		order.setIsunpack("0");
+		int m=orderService.addOrder(order);
+		//上传图片
+		String basePath="order"; 
+		FtpUtils ftp=new FtpUtils(ftpHostname,ftpPort,ftpUsername,ftpPassword,ftpBasePath);
+		if(files!=null){//可能没有上传订单图片
+		for(int i=0;i<files.size();i++){
+			MultipartFile file = files.get(i);
+			String nameEnd = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf(".")+1);
+			String fileName1=NameUtil.getExtension()+"."+nameEnd;
+			String filePath=basePath+"/"+DateUtil.getSysTime(Pattern.PATTERN_4);
+			boolean flag=false;
+			//上传到服务器
+			flag=ftp.uploadFile(filePath,fileName1,file.getInputStream());
+			if(!flag){
+				return YfslResult.fail("失败");
+			}
+			String returnPath=filePath+"/"+fileName1;
+			int n=orderService.savePath(orderId,returnPath);
+			if(n!=1){//图片未上传成功
+				int j=orderService.deleteUserByOrderId(orderId);
+				return YfslResult.fail("图片未上传成功");
+			}
+		}
+		}
+		if(m>0){
+			//websocket一对一,向前端推送
+			List<HisiOrderinfoPhoto> photo = orderService.getPhoto(orderId);
+			for(int i=0;i<photo.size();i++){
+				 String photoPath = photo.get(i).getPhotoPath();
+				 String photoPath1=imagesPath+photoPath;
+				 photo.get(i).setPhotoPath(photoPath1);
+			 }
+			SceneOrderVo sceneOrderVo=new SceneOrderVo();
+			List<String> users = new ArrayList<String>();
+			users.add("007");
+			sceneOrderVo.setHisiOrderinfoBasic(order);
+			sceneOrderVo.setPhotos(photo);
+			webSocketService.send2Users1(users, sceneOrderVo);
+			return YfslResult.ok();
+		}
+		return YfslResult.fail("失败");
+	}
+	@ApiOperation(value = "航班列表", httpMethod = "POST")
+	@RequestMapping(value = "/getFlightId", method = RequestMethod.POST)
+	public List<String> getFlightId() {
+		return orderService.getFlightId();
+	}
+	@ApiOperation(value = "模糊查询承运人", httpMethod = "POST")
+	@RequestMapping(value = "/findCarryPersonBycondition", method = RequestMethod.POST)
+	public List<HisiCarryPerson> findCarryPersonBycondition(@ApiParam(name = "condition", value = "输入的内容", required = true) 
+	@RequestParam String condition) {
+		List<HisiCarryPerson> carryPersons=orderService.findCarryPersonBycondition(condition);
+		return carryPersons;
+	}
+}

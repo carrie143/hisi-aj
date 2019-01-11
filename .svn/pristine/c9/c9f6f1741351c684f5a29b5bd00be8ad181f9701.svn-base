@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hisi.mapper.HisiOrderinfoBasicMapper">
+  <resultMap id="BaseResultMap" type="com.hisi.model.HisiOrderinfoBasic">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="channel_id" jdbcType="VARCHAR" property="channelId" />
+    <result column="order_id" jdbcType="VARCHAR" property="orderId" />
+    <result column="flight_id" jdbcType="VARCHAR" property="flightId" />
+    <result column="num" jdbcType="INTEGER" property="num" />
+    <result column="carry_person" jdbcType="VARCHAR" property="carryPerson" />
+    <result column="proxy_name" jdbcType="VARCHAR" property="proxyName" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="start_time" jdbcType="TIMESTAMP" property="startTime" />
+    <result column="last_pause_time" jdbcType="TIMESTAMP" property="lastPauseTime" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="end_time" jdbcType="TIMESTAMP" property="endTime" />
+    <result column="isUnpack" jdbcType="VARCHAR" property="isunpack" />
+    <result column="check_person" jdbcType="VARCHAR" property="checkPerson" />
+    <result column="unpack_account" jdbcType="VARCHAR" property="unpackAccount" />
+  </resultMap>
+	<resultMap id="BaseResultMap1" type="com.hisi.model.OrderVo">
+		<id column="id" jdbcType="INTEGER" property="id" />
+		<result column="channel_id" jdbcType="VARCHAR" property="channelId" />
+		<result column="order_id" jdbcType="VARCHAR" property="orderId" />
+		<result column="flight_id" jdbcType="VARCHAR" property="flightId" />
+		<result column="num" jdbcType="INTEGER" property="num" />
+		<result column="carry_person" jdbcType="VARCHAR" property="carryPerson" />
+		<result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+		<result column="start_time" jdbcType="TIMESTAMP" property="startTime" />
+		<result column="last_pause_time" jdbcType="TIMESTAMP" property="lastPauseTime" />
+		<result column="status" jdbcType="INTEGER" property="status" />
+		<result column="end_time" jdbcType="TIMESTAMP" property="endTime" />
+	</resultMap>
+	<resultMap id="BaseResultMap2" type="com.hisi.model.vo.ComprehensiveOrderVo">
+	   <id column="id" jdbcType="INTEGER" property="id" />
+		<result column="channel_id" jdbcType="VARCHAR" property="channelId" />
+		<result column="order_id" jdbcType="VARCHAR" property="orderId" />
+		<result column="flight_id" jdbcType="VARCHAR" property="flightId" />
+		<result column="num" jdbcType="INTEGER" property="num" />
+		<result column="carry_person" jdbcType="VARCHAR" property="carryPerson" />
+		<result column="check_person" jdbcType="VARCHAR" property="checkPerson" />
+		<result column="proxy_name" jdbcType="VARCHAR" property="proxyName" />
+		<result column="unpack_account" jdbcType="VARCHAR" property="unpackAccount" />
+		<result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+		<result column="start_time" jdbcType="TIMESTAMP" property="startTime" />
+		<result column="end_time" jdbcType="TIMESTAMP" property="endTime" />
+		<result column="status" jdbcType="INTEGER" property="status" />
+		<result column="isUnpack" jdbcType="VARCHAR" property="isUnpack" />
+	</resultMap>
+	<select id="getOrder" resultMap="BaseResultMap2">
+		select * from hisi_orderinfo_basic where status=1
+	</select>
+	
+
+	<select id="getComprehensiveOrderByCondition" resultMap="BaseResultMap2">
+		select * from hisi_orderinfo_basic 
+		<where>
+			<if test="isUnpack!=null and isUnpack!=''">
+				and isUnpack= #{isUnpack}
+			</if>
+			<if test="createTime!=null and createTime!=''">
+				and date(create_time)= #{createTime}
+			</if>
+			<if test="proxyName!=null and proxyName!=''">
+				and proxy_name= #{proxyName}
+			</if>
+			<if test="channelId!=null and channelId!=''">
+				and channel_id= #{channelId}
+			</if>
+			<if test="condition!=null and condition!=''">
+				and (order_id like '%${condition}%' or
+				carry_person like '%${condition}%')
+			</if>
+			and status=1
+		</where> 
+	</select>
+	<select id="findOrder_site" resultMap="BaseResultMap1">
+		select * from
+		(select * from hisi_orderinfo_basic  
+		where (status =2 and channel_id=#{channelId}) or (status !=2 and status!=1)) b
+		<where>
+			<if test="createTime!=null and createTime!=''">
+				and date(create_time)= #{createTime}
+			</if>
+			<if test="qiantian!=null and qiantian!=''">
+				and date(create_time)=date_sub(curdate(),interval 2 day)
+			</if>
+			<if test="flightIds.length&gt;0">
+				and flight_id in
+				<foreach close=")" collection="flightIds" index="index" item="flightId" open="(" separator=",">
+					#{flightId}
+				</foreach>
+			</if>
+			<if test="conditions!=null and conditions!=''">
+				and (order_id like '%${conditions}%' or
+				carry_person like '%${conditions}%')
+			</if>
+		</where>
+	</select>
+	<select id="findOrder_office" resultMap="BaseResultMap">
+		select * from
+		hisi_orderinfo_basic
+		<where>
+			<if test="createTime!=null and createTime!=''">
+				and date(create_time)= #{createTime}
+			</if>
+			<if test="channelId!=null and channelId!=''">
+				and channel_id=#{channelId}
+			</if>
+			<if test="conditions!=null and conditions!=''">
+				and (order_id like '%${conditions}%' or
+				carry_person like '%${conditions}%' or flight_id
+				like '%${conditions}%')
+			</if>
+			and status!=1
+		</where>
+
+	</select>
+	<update id="editOrder">
+		update hisi_orderinfo_basic
+		set
+		order_id =#{orderId},
+		flight_id=#{flightId},
+		num=#{num},
+		carry_person=#{carryPerson},
+		create_time=#{date}
+		where id = #{id}
+	</update>
+
+	<update id="updateChannelId">
+		update hisi_orderinfo_basic
+		set
+		channel_id =#{channelId}
+		where order_id = #{orderId}
+	</update>
+	<update id="updateOtherStatus">
+		update hisi_orderinfo_basic
+		set status=4
+		where order_id
+		= #{orderId1}
+	</update>
+
+	<update id="updateStatusToFive">
+		update hisi_orderinfo_basic
+		set status=5
+		where order_id
+		= #{orderId1}
+	</update>
+	<update id="updateOtherStatus1">
+		update hisi_orderinfo_basic
+		set status=0
+		where order_id
+		= #{orderId1}
+	</update>
+	<update id="updateStatusToThree">
+		update hisi_orderinfo_basic
+		set status=3
+		where order_id
+		= #{orderId1}
+	</update>
+	<select id="findByCreateTime" resultMap="BaseResultMap">
+		select * from
+		hisi_orderinfo_basic where date(create_time)=
+		#{date} and
+		channel_id=#{channelId}
+	</select>
+
+	<select id="getOrderInfo" resultMap="BaseResultMap">
+		select * from
+		hisi_orderinfo_basic where order_id in (select order_id from hisi_orderinfo_other where start_time is not null and pause_time is null and end_time is null and channelId=#{channelId})
+	</select>
+	<select id="getFlightId" resultType="java.lang.String">
+	select DISTINCT flight_id from hisi_orderinfo_basic where `status`!=1
+	</select>
+	<select id="findByCreateTime_office" resultMap="BaseResultMap">
+		select * from
+		hisi_orderinfo_basic where date(create_time)=
+		#{date}
+	</select>
+	<select id="findByChannelId" resultMap="BaseResultMap">
+		select * from
+		hisi_orderinfo_basic where channel_id=#{channelId}
+	</select>
+
+	<select id="findByDate" resultMap="BaseResultMap">
+		select * from
+		hisi_orderinfo_basic where
+		date(create_time)=date_sub(curdate(),interval 2 day) and
+		channel_id=#{channelId}
+	</select>
+
+
+	<select id="findByFlightId" resultMap="BaseResultMap">
+		select * from
+		hisi_orderinfo_basic where flight_id=#{flightId}
+	</select>
+	<select id="selectByStatus" resultMap="BaseResultMap1">
+		select * from
+		hisi_orderinfo_basic where status !=1 and channel_id=#{channelId}
+	</select>
+	<select id="getCheckingOrder" resultMap="BaseResultMap1">
+		select * from
+		hisi_orderinfo_basic where status =2 and channel_id=#{channelId}
+	</select>
+	<select id="getUncheckingorder" resultMap="BaseResultMap1">
+		select * from
+		hisi_orderinfo_basic where status !=2 and status!=1
+	</select>
+	<select id="getAllOrder" resultMap="BaseResultMap1">
+		select * from
+		hisi_orderinfo_basic where status !=1
+	</select>
+	<select id="findByOrderId" resultMap="BaseResultMap">
+		select * from
+		hisi_orderinfo_basic where order_id=#{orderId}
+	</select>
+	<select id="getOrder_site" resultMap="BaseResultMap1">
+		select * from hisi_orderinfo_basic where (status =2 and
+		channel_id=#{channelId}) or (status !=2 and status!=1)
+	</select>
+	<select id="selectAllByPage" resultMap="BaseResultMap">
+		select * from
+		hisi_orderinfo_basic where status !=1
+	</select>
+	<select id="findByConditions" parameterType="java.lang.String" resultMap="BaseResultMap">
+		select * from hisi_orderinfo_basic where
+		channel_id=#{channelId} and
+		order_id like
+		CONCAT('%','${conditions}','%') or carry_person like
+		CONCAT('%','${conditions}','%')
+		or flight_id like
+		CONCAT('%','${conditions}','%')
+	</select>
+
+	<select id="findByConditions_office" parameterType="java.lang.String" resultMap="BaseResultMap">
+		select * from hisi_orderinfo_basic where
+		order_id like
+		CONCAT('%','${conditions}','%') or carry_person like
+		CONCAT('%','${conditions}','%')
+		or flight_id like
+		CONCAT('%','${conditions}','%')
+	</select>
+	<update id="updateStartTime">
+		update hisi_orderinfo_basic
+		set start_time
+		=#{date},status=2,channel_id=#{channelId}
+		where order_id = #{orderId}
+	</update>
+
+	<update id="updateStatus">
+		update hisi_orderinfo_basic
+		set status=2
+		where order_id
+		= #{orderId}
+	</update>
+
+	<update id="updateEndTime">
+		update hisi_orderinfo_basic
+		set end_time =#{date},
+		status=1,
+		check_person=#{userName}
+		where order_id = #{orderId}
+	</update>
+
+	<delete id="deleteById" parameterType="java.lang.String">
+		DELETE
+		FROM
+		hisi_orderinfo_basic
+		WHERE
+		order_id = #{orderId}
+	</delete>
+	<delete id="deleteUserByOrderId" parameterType="java.lang.String">
+		DELETE
+		FROM
+		hisi_orderinfo_basic
+		WHERE
+		order_id = #{orderId}
+	</delete>
+	<update id="updatePauseTime">
+		update hisi_orderinfo_basic
+		set last_pause_time
+		=#{date},status=3
+		where order_id = #{orderId}
+	</update>
+</mapper>

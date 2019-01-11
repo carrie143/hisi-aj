@@ -1,0 +1,137 @@
+package com.hisi.service.impl;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import com.hisi.mapper.HisiDeviceMapper;
+import com.hisi.model.HisiDevice;
+import com.hisi.model.HisiUnpack;
+import com.hisi.service.DeviceService;
+import com.itextpdf.text.pdf.PdfStructTreeController.returnType;
+@Service
+public class DeviceServiceImpl implements DeviceService {
+	@Autowired
+	private HisiDeviceMapper hisiDeviceMapper;
+	@Override
+	public int insertDevice(HisiDevice hisiDevice) {
+		return hisiDeviceMapper.insert(hisiDevice);
+	}
+	@Override
+	public int deleteDevice(Integer id) {
+		int i = hisiDeviceMapper.deleteByPrimaryKey(id);
+		return i;
+	}
+	@Override
+	public List<HisiDevice> getAllDevice(Integer pageNum,Integer pageSize) throws Exception {
+		/*List<HisiDevice> hisiDevices = hisiDeviceMapper.selectAll();
+		for(int i=0;i<hisiDevices.size();i++){
+			String deviceIp = hisiDevices.get(i).getDeviceIp();
+			String oldStatus = hisiDevices.get(i).getDeviceStatus();
+			 InetAddress address = InetAddress.getByName(deviceIp);//调用主机的ip
+	         if(address.isReachable(5)){
+	        	 if(!oldStatus.equals("正常")){
+	        		 hisiDevices.get(i).setDeviceStatus("正常");
+	        		 hisiDeviceMapper.updateByPrimaryKey(hisiDevices.get(i));
+		         }
+	        	 }
+	         else{
+	        	 if(!oldStatus.equals("异常")){
+	        		 hisiDevices.get(i).setDeviceStatus("异常");
+	        		 hisiDeviceMapper.updateByPrimaryKey(hisiDevices.get(i));
+		         }
+			}
+		}*/
+		PageHelper.startPage(pageNum,pageSize);
+		List<HisiDevice> hisiDevices1 = hisiDeviceMapper.selectAll();
+		return hisiDevices1;
+	}
+	@Override
+	public int editDevice(HisiDevice hisiDevice) {
+		
+		int i = hisiDeviceMapper.updateByPrimaryKey(hisiDevice);
+		return i;
+	}
+	@Override
+	public List<HisiDevice> findDeviceByStatus(String status) {
+		if(status.equals("全部")){
+			List<HisiDevice> hisiDevices = hisiDeviceMapper.selectAll();
+			return hisiDevices;
+		}
+		List<HisiDevice> hisiDevices = hisiDeviceMapper.findDeviceByStatus(status);
+		return hisiDevices;
+	}
+	@Override
+	public List<HisiDevice> findDeviceByChannelId(String channelId) {
+		if(channelId.equals("全部")){
+			List<HisiDevice> hisiDevices = hisiDeviceMapper.selectAll();
+			return hisiDevices;
+		}
+		List<HisiDevice> hisiDevices = hisiDeviceMapper.selectByChannelId(channelId);
+		return hisiDevices;
+	}
+	@Override
+	public List<HisiDevice> findDeviceByDate(String date) {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		try {
+			Date date1=sdf.parse(date);
+			System.out.println(date1);
+			List<HisiDevice> hisiDevices=hisiDeviceMapper.findDeviceByDate(date1);
+			return hisiDevices;
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	@Override
+	public List<HisiDevice> findDeviceByRole(String role) {
+		if(role.equals("全部")){
+			List<HisiDevice> hisiDevices = hisiDeviceMapper.selectAll();
+			return hisiDevices;
+		}
+		List<HisiDevice> hisiDevices=hisiDeviceMapper.findDeviceByRole(role);
+		return hisiDevices;
+	}
+	@Override
+	public List<HisiDevice> findDeviceByConditions(String conditions) {
+		List<HisiDevice> hisiDevices=hisiDeviceMapper.findDeviceByConditions(conditions);
+		return hisiDevices;
+	}
+	@Override
+	public String getChannelIdByIp(String ip) {
+		String channelId=hisiDeviceMapper.getChannelIdByIp(ip);
+		return channelId;
+	}
+	@Override
+	public PageInfo<HisiDevice> findDevice(int pageNum, int pageSize, String date,
+			String role, String channelId, String condition,String status) {
+		PageHelper.startPage(pageNum, pageSize);
+		List<HisiDevice> list=hisiDeviceMapper.findDevice(date,role,channelId,condition,status);
+		return new PageInfo<HisiDevice>(list); 
+	}
+	@Override
+	public int selectRoleIdByIp(String ip) {
+		return hisiDeviceMapper.selectRoleIdByIp(ip);
+	}
+	@Override
+	public String selectRoleNameByIp(String ip) {
+		return hisiDeviceMapper.selectRoleNameByIp(ip);
+	}
+	@Override
+	public List<HisiDevice> getCreamaDevice(String channelId) {
+		return hisiDeviceMapper.getCreamaDevice(channelId);
+	}
+	@Override
+	public List<HisiDevice> findCreamaByChannelId(String channelId) {
+		return hisiDeviceMapper.findCreamaByChannelId(channelId);
+	}
+
+}

@@ -1,0 +1,127 @@
+package com.hisi.controller;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.github.pagehelper.PageInfo;
+import com.hisi.common.util.YfslResult;
+import com.hisi.common.websocket.WebSocketService;
+import com.hisi.model.HisiUnpackGoodsPic;
+import com.hisi.model.vo.HisiTrackInfo;
+import com.hisi.model.vo.HisiUnpackInfo;
+import com.hisi.model.vo.HisiUnpackReturnInfo;
+import com.hisi.service.UnpackService;
+
+@RestController
+@RequestMapping("/unpack")
+@Api(value = "HisiUnpack", description = "开包记录管理")
+public class UnpackController {
+
+	@Autowired
+	private UnpackService unpackService;
+	@Autowired
+	private WebSocketService webSocketService;
+
+	@ApiOperation(value = "增加开包记录", httpMethod = "POST", response = String.class, notes = "")
+	@RequestMapping(value = "/add", method = RequestMethod.POST)
+	@ApiImplicitParam(name = "hisiUnpackInfo", value = "开包记录vo", required = true, dataType = "HisiUnpackInfo")
+	public YfslResult addUnpack(@RequestBody HisiUnpackInfo hisiUnpackInfo) {
+		try {
+			Integer re = unpackService.insertUnpack(hisiUnpackInfo);
+			return YfslResult.ok(re);
+		} catch (Exception e) {
+			return YfslResult.fail(e.getMessage());
+		}
+	}
+
+	@ApiOperation(value = "删除开包记录", httpMethod = "DELETE", response = String.class, notes = "")
+	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
+	public YfslResult deleteUnpack(@PathVariable int id) {
+		try {
+			Integer re = unpackService.deleteUnpack(id);
+			return YfslResult.ok(re);
+		} catch (Exception e) {
+			return YfslResult.fail(e.getMessage());
+		}
+	}
+
+	@ApiOperation(value = "查询开包记录", httpMethod = "GET", response = String.class, notes = "")
+	@RequestMapping(value = "/get", method = RequestMethod.GET)
+	public YfslResult getUnpack(
+			@RequestParam(required = true) @ApiParam("页数，首页为1") int page,
+			@RequestParam(required = true) @ApiParam("每页数据条数") int num,
+			@RequestParam(required = false) @ApiParam("模糊查询参数") String global) {
+		try {
+			PageInfo<HisiUnpackReturnInfo> re = unpackService.getUnpack(page,
+					num, global);
+			return YfslResult.ok(re);
+		} catch (Exception e) {
+			return YfslResult.fail(e.getMessage());
+		}
+	}
+
+	@ApiOperation(value = "通过运单号查询运单信息", httpMethod = "GET", response = String.class, notes = "")
+	@RequestMapping(value = "/getTracking", method = RequestMethod.GET)
+	public YfslResult getTracking(
+			@RequestParam(required = true) @ApiParam("运单号") String trackingNumber) {
+		try {
+			HisiTrackInfo re = unpackService.getTracking(trackingNumber);
+			return YfslResult.ok(re);
+		} catch (Exception e) {
+			return YfslResult.fail(e.getMessage());
+		}
+	}
+
+	@ApiOperation(value = "获取图片base64", httpMethod = "GET", response = String.class, notes = "")
+	@RequestMapping(value = "/getBase64", method = RequestMethod.GET)
+	public YfslResult getPicBase64(
+			@RequestParam(required = true) @ApiParam("图片url") String url) {
+		String re = unpackService.getPicBase64(url);
+		return YfslResult.ok(re);
+	}
+
+	@ApiOperation(value = "增加开包实物图片", httpMethod = "POST", response = String.class, notes = "")
+	@RequestMapping(value = "/addGoodsPic", method = RequestMethod.POST)
+	public YfslResult addUnpackGoodsPic(
+			@RequestParam(required = true) @ApiParam("图片url") String url) {
+		try {
+			HisiUnpackGoodsPic hisiUnpackGoodsPic = new HisiUnpackGoodsPic();
+			hisiUnpackGoodsPic.setUnpackId(0);
+			hisiUnpackGoodsPic.setAccess(url.replaceAll("\\\\", "/"));
+			HisiUnpackGoodsPic re = unpackService
+					.insertUnPackGoodsPic(hisiUnpackGoodsPic);
+			return YfslResult.ok(re);
+		} catch (Exception e) {
+			return YfslResult.fail(e.getMessage());
+		}
+	}
+
+	@ApiOperation(value = "删除开包实物图片", httpMethod = "POST", response = String.class, notes = "")
+	@RequestMapping(value = "/delGoodsPic", method = RequestMethod.POST)
+	public YfslResult delUnpackGoodsPic(
+			@RequestParam(required = true) @ApiParam("id") Integer id,
+			@RequestParam(required = true) @ApiParam("图片url") String url) {
+		try {
+			HisiUnpackGoodsPic hisiUnpackGoodsPic = new HisiUnpackGoodsPic();
+			hisiUnpackGoodsPic.setId(id);
+			hisiUnpackGoodsPic.setAccess(url);
+			boolean re = unpackService.deleteUnPackGoodsPic(hisiUnpackGoodsPic);
+			if (re)
+				return YfslResult.ok(re);
+			else
+				return YfslResult.fail("图片删除失败");
+		} catch (Exception e) {
+			return YfslResult.fail(e.getMessage());
+		}
+	}
+}

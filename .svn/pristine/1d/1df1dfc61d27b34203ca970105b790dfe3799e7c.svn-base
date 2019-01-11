@@ -1,0 +1,170 @@
+package com.hisi.service.impl;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import sun.misc.BASE64Encoder;
+
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import com.hisi.common.file.FtpUtils;
+import com.hisi.common.util.BeanCopyUtil;
+import com.hisi.mapper.HisiUnpackGoodsPicMapper;
+import com.hisi.mapper.HisiUnpackMapper;
+import com.hisi.mapper.HisiUnpackNecessaryPicMapper;
+import com.hisi.model.HisiUnpack;
+import com.hisi.model.HisiUnpackGoodsPic;
+import com.hisi.model.vo.HisiTrackInfo;
+import com.hisi.model.vo.HisiUnpackInfo;
+import com.hisi.model.vo.HisiUnpackReturnInfo;
+import com.hisi.service.UnpackService;
+
+@Service
+public class UnpackServiceImpl implements UnpackService {
+	@Autowired
+	private HisiUnpackMapper hisiUnpackMapper;
+	@Autowired
+	private HisiUnpackGoodsPicMapper hisiUnpackGoodsPicMapper;
+	@Autowired
+	private HisiUnpackNecessaryPicMapper hisiUnpackNecessaryPicMapper;
+
+	@Value("${ftp.ip}")
+	private String ftpIp;
+	@Value("${ftp.port}")
+	private int ftpPort;
+	@Value("${ftp.account}")
+	private String ftpAccount;
+	@Value("${ftp.password}")
+	private String ftpPassword;
+	@Value("${ftp.basePath}")
+	private String basePath;
+	@Value("${ftp.pic}")
+	private String ftpPic;
+	@Value("${localPath}")
+	private String localPath;
+
+	@Override
+	public Integer insertUnpack(HisiUnpackInfo hisiUnpackInfo) {
+		HisiUnpack hisiUnpack = new HisiUnpack();
+		BeanCopyUtil.copyTo(hisiUnpackInfo, hisiUnpack);
+		hisiUnpack.setTime(new Date());
+		String pic = hisiUnpack.getUnpackedPicAccess();
+		if (!StringUtils.isEmpty(pic))
+			hisiUnpack.setUnpackedPicAccess(pic.substring(pic.indexOf(ftpPic)
+					+ ftpPic.length()));
+		Integer re = hisiUnpackMapper.insert(hisiUnpack);
+		List<String> goodsPics = hisiUnpackInfo.getUnpackedGoodsPicAccess();
+		for (String e : goodsPics) {
+			HisiUnpackGoodsPic obj = new HisiUnpackGoodsPic();
+			obj.setUnpackId(hisiUnpack.getId());
+			obj.setAccess(e.substring(e.indexOf(ftpPic) + ftpPic.length()));
+			hisiUnpackGoodsPicMapper.insert(obj);
+		}
+		hisiUnpackNecessaryPicMapper.updateUnpackById(hisiUnpackInfo
+				.getUnpackVerifyPicId());
+		hisiUnpackMapper.updateOrderBasisToUnpack(
+				hisiUnpackInfo.getTrackingNumber(),
+				hisiUnpackInfo.getUnpackAccount());
+		return re;
+	}
+
+	@Override
+	public Integer deleteUnpack(int id) {
+		Integer re = hisiUnpackMapper.deleteByPrimaryKey(id);
+		return re;
+	}
+
+	@Override
+	public PageInfo<HisiUnpackReturnInfo> getUnpack(int pageNum, int pageSize,
+			String global) {
+		PageHelper.startPage(pageNum, pageSize);
+		List<HisiUnpackReturnInfo> re = hisiUnpackMapper.selectByGlobal(global);
+		for (HisiUnpackReturnInfo e : re) {
+			if (!StringUtils.isEmpty(e.getUnpackedPicAccess()))
+				e.setUnpackedPicAccess(ftpPic + e.getUnpackedPicAccess());
+			List<String> pics = hisiUnpackGoodsPicMapper.selectByUnpackId(e
+					.getId());
+			List<String> picsReturn = new ArrayList<String>();
+			for (String pic : pics)
+				picsReturn.add(ftpPic + pic);
+			e.setUnpackedGoodsPicAccess(picsReturn);
+		}
+		return new PageInfo<HisiUnpackReturnInfo>(re);
+	}
+
+	@Override
+	public HisiTrackInfo getTracking(String trackingNumber) {
+		HisiTrackInfo re = hisiUnpackMapper.selectTracking(trackingNumber);
+		List<String> pictures = hisiUnpackMapper
+				.selectTrackingPictures(trackingNumber);
+		List<String> picturesReturn = new ArrayList<String>();
+		for (String picture : pictures) {
+			picture = ftpPic + picture;
+			picturesReturn.add(picture);
+		}
+
+		re.setPictures(picturesReturn);
+		return re;
+	}
+
+	@Override
+	public String getPicBase64(String url) {
+		String str = null;
+		if (StringUtils.isEmpty(url))
+			return null;
+		File dir = new File(localPath);
+		// 如果文件夹不存在则创建
+		if (!dir.exists() && !dir.isDirectory())
+			dir.mkdirs();
+		FtpUtils ftpUtils = new FtpUtils(ftpIp, ftpPort, ftpAccount,
+				ftpPassword, basePath);
+		boolean flag = false;
+		// String path = url.substring(url.indexOf(ftpPic) + ftpPic.length());
+		String path = "\\"
+				+ url.substring(url.indexOf("/", url.indexOf("//") + 2) + 1,
+						url.lastIndexOf("/"));
+		path = path.replaceAll("/", "\\\\");
+		flag = ftpUtils.downloadFile(path,
+				url.substring(url.lastIndexOf("/") + 1), localPath);
+		if (flag) {
+			str = getImageStr(localPath
+					+ url.substring(url.lastIndexOf("/") + 1));
+			str.replaceAll("\r\n", "");
+			File file = new File(localPath
+					+ url.substring(url.lastIndexOf("/") + 1));
+			file.delete();
+		}
+		return str;
+	}
+
+	String getImageStr(String imgFile) {
+		InputStream inputStream = null;
+		byte[] data = null;
+		try {
+			inputStream = new FileInputStream(imgFile);
+			data = new byte[inputStream.available()];
+			inputStream.read(data);
+			inputStream.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		// 加密
+		BASE64Encoder encoder = new BASE64Encoder();
+		return encoder.encode(data);
+	}
+
+	@Override
+	public List<String> getUnpackPhoto(String orderId) {
+		return hisiUnpackMapper.getUnpackPhoto(orderId);
+	}
+}

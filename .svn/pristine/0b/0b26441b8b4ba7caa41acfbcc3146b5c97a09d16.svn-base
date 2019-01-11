@@ -1,0 +1,321 @@
+package com.hisi.service.impl;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.alibaba.druid.util.StringUtils;
+import com.github.pagehelper.PageHelper;
+import com.hisi.arcsoft.AFD_FSDK_USE;
+import com.hisi.arcsoft.ConfigInfo;
+import com.hisi.common.util.ExcelImportUtils;
+import com.hisi.common.util.PasswordUtil;
+import com.hisi.common.util.YfslResult;
+import com.hisi.mapper.HisiUserMapper;
+import com.hisi.model.HisiDepartment;
+import com.hisi.model.HisiUser;
+import com.hisi.service.UserService;
+
+@Service
+public class UserServiceImpl implements UserService{
+	public static final int FD_WORKBUF_SIZE = 20 * 1024 * 1024;
+	public static final int FR_WORKBUF_SIZE = 40 * 1024 * 1024;
+	public static final int MAX_FACE_NUM = 50;
+	public static final String APPID = "3eDu2UTVungPP9xX5LX2aoFeZLnGGyFBY4UN1LHzryKN";
+	public static final String FD_SDKKEY = "ETcJoAnZkJHqjb5BxSwuqZYSjUAP9utgZKjbffNFA9TZ";
+	public static final String FR_SDKKEY = "ETcJoAnZkJHqjb5BxSwuqZYpDfwtW2jg6VhyBq1tgH4T";
+	@Autowired
+	private ConfigInfo configInfo;
+	@Autowired
+	private PasswordUtil passwordUtil;
+	@Autowired
+	private HisiUserMapper hisiUserMapper;
+	
+	@Override
+	public byte[] generateByte(String imageUrl) {
+		byte[] imageByte = AFD_FSDK_USE.generateByte(imageUrl, APPID, FD_SDKKEY, FR_SDKKEY,configInfo);
+		return imageByte;
+	}
+	@Override
+	public int addUser(HisiUser hisiUser) {
+		int n = hisiUserMapper.insert(hisiUser);
+		return n;
+	}
+	@Override
+	public HisiUser findUserByUserId(String userId) {
+		HisiUser hisiUser = hisiUserMapper.selectByUserId(userId);
+		return hisiUser;
+	}
+	@Override
+	public int updatePassword(String userId, String newPassword,String newSecretPassword) {
+		int i=hisiUserMapper.updatePassword(userId,newPassword,newSecretPassword);
+		return i;
+	}
+	@Override
+	public YfslResult batchImport(String fileName, MultipartFile mfile) {
+		File uploadDir=new File("E:\\fileupload");
+		if(!uploadDir.exists())
+		{	uploadDir.mkdirs();}
+		File tempFile=new File("E:\\fileupload\\"+new Date().getTime()+".xls");
+		InputStream is=null;
+		try {
+			mfile.transferTo(tempFile);
+			is=new FileInputStream(tempFile);
+			Workbook wb=null;
+			if(ExcelImportUtils.isExcel2007(fileName)){
+				wb=new XSSFWorkbook(is);
+				
+			}else{
+				wb=new HSSFWorkbook(is);
+			}
+			return readExcelValue(wb,tempFile);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}finally{
+			if(is!=null){
+				try {
+					is.close();
+				} catch (IOException e) {
+					is=null;
+					e.printStackTrace();
+				}
+			}
+		}
+		return YfslResult.fail("导入出错，请检查数据格式~");
+	}
+	private YfslResult readExcelValue(Workbook wb, File tempFile) {
+		String errorMsg="";
+		Sheet sheet = wb.getSheetAt(0);
+		//行数
+		int totalRows = sheet.getPhysicalNumberOfRows();
+		//总列数
+		int totalCells=0;
+		//从第二行算起
+		if(totalRows>=2&&sheet.getRow(1)!=null){
+			totalCells = sheet.getRow(1).getPhysicalNumberOfCells();
+		}
+		List<HisiUser> hisiUserList=new ArrayList<HisiUser>();
+		List<HisiUser> allHisiUserList=new ArrayList<HisiUser>();
+		
+		List<HisiUser> existedHisiUserList=hisiUserMapper.selectAll();
+		for (int i = 0; i < existedHisiUserList.size(); i++) {//将原来的人员列表也放在list中
+			allHisiUserList.add(existedHisiUserList.get(i));
+		}
+		HisiUser hisiUser;
+		String br="<br/>";
+		for(int r=1;r<totalRows;r++){
+			String rowMessage="";
+			Row row=sheet.getRow(r);
+			if(row==null){
+			 errorMsg+=br+"第"+(r+1)+"行数据有问题，请仔细检查";
+				continue;
+			}
+			hisiUser=new HisiUser();
+			String userId="";
+			String userName="";
+			String telphone="";
+			for(int c=0;c<totalCells;c++){
+				Cell cell = row.getCell(c);
+				cell.setCellType(Cell.CELL_TYPE_STRING);
+				if(null!=cell){
+					if(c==0){
+						userId=cell.getStringCellValue();
+						if(StringUtils.isEmpty(userId)){
+							rowMessage+="员工id不能为空";
+						}
+						hisiUser.setUserid(userId);
+					}else if(c==1){
+						userName=cell.getStringCellValue();
+						if(StringUtils.isEmpty(userName)){
+							rowMessage+="员工姓名不能为空";
+						}
+						hisiUser.setUsername(userName);
+					}else if(c==2){
+						telphone=cell.getStringCellValue();
+						if(StringUtils.isEmpty(telphone)){
+							rowMessage+="员工电话不能为空";
+						}
+						hisiUser.setTelphone(telphone);
+						}
+					}
+				else{
+		                   rowMessage += "第"+(c+1)+"列数据有问题，请仔细检查；";  
+		               }
+				}
+				if(!StringUtils.isEmpty(rowMessage)){//数据有问题
+					errorMsg+=br+"第"+(r+1)+"行"+rowMessage;
+				}else{
+					allHisiUserList.add(hisiUser);//两个列表都要存
+					hisiUserList.add(hisiUser);
+				}
+			}
+		
+			if(tempFile.exists()){
+				tempFile.delete();
+			}
+			List<String> userIdList=new ArrayList<String>();
+			List<String> telphoneList=new ArrayList<String>();
+			Set<String> userIdSet = new HashSet<String>();
+			Set<String> telphoneSet = new HashSet<String>();
+			if(StringUtils.isEmpty(errorMsg)){
+				for(int i = 0 ; i < allHisiUserList.size() ; i++) {//判断是否有重复的userId和电话
+					userIdList.add(allHisiUserList.get(i).getUserid());
+					telphoneList.add(allHisiUserList.get(i).getTelphone());
+				}
+				 for (String str : userIdList) {
+			            boolean b = userIdSet.add(str);
+			            if(!b){
+			            	return YfslResult.fail("存在重复userId");
+			            }
+			        }
+				 for (String str : telphoneList) {
+			            boolean b = telphoneSet.add(str);
+			            if(!b){
+			            	return YfslResult.fail("存在重复电话");
+			            }
+			        }
+				for(HisiUser hisiUser1:hisiUserList){
+					hisiUser1.setPassword1("123456");
+					Object generateScret = passwordUtil.generateScret(hisiUser1.getUserid(), "123456");
+					String password=generateScret.toString();
+					hisiUser1.setPassword(password);
+					hisiUser1.setStaus(0);
+					hisiUserMapper.insert(hisiUser1);
+				}
+				errorMsg="导入成功，共"+hisiUserList.size()+"条数据！";
+				return YfslResult.ok(errorMsg);
+			}
+			return YfslResult.fail(errorMsg);
+	}
+	@Override
+	public int updateDepartment(String userId, String departmentName) {
+		int n=hisiUserMapper.updateDepartment(userId,departmentName);
+		return n;
+	}
+	@Override
+	public int deleteUser(Integer id) {
+		int i = hisiUserMapper.deleteByPrimaryKey(id);
+		return i;
+	}
+	@Override
+	public int disabledUser(Integer id) {
+		int i=hisiUserMapper.disabledUser(id);
+		return i;
+	}
+	@Override
+	public int resetPassword(String userId) {
+		Object generateScret = passwordUtil.generateScret(userId, "123456");
+		String password=generateScret.toString();
+		int i=hisiUserMapper.resetPassword(userId,password);
+		return i;
+	}
+	@Override
+	public int editUser(int id, String userId, String userName,
+			String telPhone, String groupName,
+			byte[] imageByte, String savePath,String password,String roleName) {
+		int i=hisiUserMapper.editUser(id,userId,userName,telPhone,groupName,imageByte,savePath,password,roleName);
+		return i;
+	}
+	@Override
+	public List<HisiUser> findByGroup(String groupName) {
+		if(groupName.equals("全部")){
+			List<HisiUser> HisiUsers = hisiUserMapper.selectAll();
+			return HisiUsers;
+		}
+		List<HisiUser> HisiUsers=hisiUserMapper.findByGroup(groupName);
+		return HisiUsers;
+	}
+	@Override
+	public List<HisiUser> findByConditions(String conditions,Integer pageNum,Integer pageSize,String groupName,String roleName) {
+		PageHelper.startPage(pageNum,pageSize);
+		List<HisiUser> hisiUsers=hisiUserMapper.findByConditions(conditions,groupName,roleName);
+		return hisiUsers;
+	}
+	@Override
+	public HisiDepartment getDepartmentId(String userId) {
+		HisiDepartment hisiDepartment=hisiUserMapper.getDepartmentId(userId);
+		return hisiDepartment;
+	}
+	@Override
+	public List<HisiUser> findAllUsers(Integer pageNum,Integer pageSize,int departmentId) {
+		PageHelper.startPage(pageNum,pageSize);
+		List<HisiUser> hisiUsers = hisiUserMapper.findAllUsers(departmentId);
+		return hisiUsers;
+	}
+	@Override
+	public int undisabledUser(Integer id) {
+		int i=hisiUserMapper.undisabledUser(id);
+		return i;
+	}
+	@Override
+	public String findPathById(int id) {
+		String path=hisiUserMapper.findPathById(id);
+		return path;
+	}
+	@Override
+	public List<HisiUser> findAllUserId() {
+		return hisiUserMapper.findAllUserId();
+	}
+	@Override
+	public int editPart(int id, String userId, String userName,
+			String telPhone, String groupName,String password,String roleName) {
+		return hisiUserMapper.editPart(id,userId,userName,telPhone,groupName,password,roleName);
+	}
+	@Override
+	public HisiUser findUserByTelPhone(String telPhone) {
+		return hisiUserMapper.findUserByTelPhone(telPhone);
+	}
+	@Override
+	public int updateRole(String userId, String deviceRoleName) {
+		return hisiUserMapper.updateRole(userId,deviceRoleName);
+	}
+	@Override
+	public String findRoleByUserId(String userId) {
+		return hisiUserMapper.findRoleByUserId(userId);
+	}
+	@Override
+	public List<HisiUser> findProxyByCondition(int pageNum, int pageSize,
+			String condition) {
+		PageHelper.startPage(pageNum,pageSize);
+		return hisiUserMapper.findProxyByCondition(condition);
+	}
+	@Override
+	public List<HisiUser> getProxyList(int pageNum, int pageSize) {
+		PageHelper.startPage(pageNum,pageSize);
+		return hisiUserMapper.getProxyList();
+	}
+	@Override
+	public int editProxy(String userId, String userName, String manager,
+			String telphone, String cardId,int id,String roleName) {
+		return hisiUserMapper.editProxy(userId,userName,manager,telphone, cardId,id,roleName);
+	}
+	@Override
+	public String getUserName(String userId) {
+		return hisiUserMapper.getUserName(userId);
+	}
+	@Override
+	public HisiUser findProxyByCardId(String cardId) {
+		return hisiUserMapper.findProxyByCardId(cardId);
+	}
+	@Override
+	public List<String> getProxyPerson() {
+		return hisiUserMapper.getProxyPerson();
+	}
+		
+}

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hisi.mapper.HisiOrderinfoPhotoMapper">
+	<resultMap id="BaseResultMap" type="com.hisi.model.HisiOrderinfoPhoto">
+		<!-- WARNING - @mbg.generated -->
+		<id column="id" property="id" jdbcType="INTEGER" />
+		<result column="order_id" property="orderId" jdbcType="VARCHAR" />
+		<result column="photo_path" property="photoPath" jdbcType="VARCHAR" />
+	</resultMap>
+
+	<delete id="deletePath" parameterType="java.lang.String">
+		DELETE
+		FROM
+		hisi_orderinfo_photo
+		WHERE
+		order_id = #{orderId}
+	</delete>
+	<delete id="deleteUnUsePath" parameterType="java.lang.Integer">
+		DELETE
+		FROM
+		hisi_orderinfo_photo
+		WHERE
+		id = #{id}
+	</delete>
+	<select id="getPhoto" parameterType="java.lang.String" resultMap="BaseResultMap">
+		select *
+		from hisi_orderinfo_photo where order_id=#{orderId}
+	</select>
+	
+	<select id="getOldIds" parameterType="java.lang.String" resultType="java.lang.Integer">
+		select id
+		from hisi_orderinfo_photo where order_id=#{orderId}
+	</select>
+	<select id="getOrderinfoPhotoByChannelId" parameterType="java.lang.String" resultMap="BaseResultMap">
+		select *
+		from hisi_orderinfo_photo where order_id in (select order_id from hisi_orderinfo_other where start_time is not null and pause_time is null and end_time is null and channelId=#{channelId})
+	</select>
+</mapper>

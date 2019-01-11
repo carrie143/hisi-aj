@@ -1,0 +1,4 @@
+server.port=9091
+
+fd.sdk=/dll/n/libarcsoft_fsdk_face_detection.dll
+fr.sdk=/dll/n/libarcsoft_fsdk_face_recognition.dll

@@ -1,0 +1,116 @@
+package com.hisi.service.impl;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import com.hisi.common.util.BeanCopyUtil;
+import com.hisi.mapper.HisiScreenshotPicMapper;
+import com.hisi.mapper.HisiUnpackGoodsPicMapper;
+import com.hisi.mapper.HisiUnpackMapper;
+import com.hisi.mapper.HisiUnpackNecessaryPicMapper;
+import com.hisi.model.HisiScreenshotPic;
+import com.hisi.model.HisiUnpackNecessaryPic;
+import com.hisi.model.vo.HisiTrackInfo;
+import com.hisi.model.vo.HisiUnpackNecessaryInfo;
+import com.hisi.model.vo.HisiUnpackNecessaryPicReturnInfo;
+import com.hisi.service.UnpackVerifyService;
+
+@Service
+public class UnpackVerifyServiceImpl implements UnpackVerifyService {
+
+	@Autowired
+	private HisiUnpackNecessaryPicMapper hisiUnpackNecessaryPicMapper;
+	@Autowired
+	private HisiUnpackMapper hisiUnpackMapper;
+	@Autowired
+private HisiScreenshotPicMapper hisiScreenshotPicMapper;
+@Autowired
+private HisiUnpackGoodsPicMapper hisiUnpackGoodsPicMapper;
+	@Value("${ftp.ip}")
+	private String ftpIp;
+	@Value("${ftp.port}")
+	private int ftpPort;
+	@Value("${ftp.account}")
+	private String ftpAccount;
+	@Value("${ftp.password}")
+	private String ftpPassword;
+	@Value("${ftp.root}")
+	private String ftpRoot;
+	@Value("${ftp.pic}")
+	private String ftpPic;
+	@Value("${localPath}")
+	private String localPath;
+	@Value("${test}")
+	private String test;
+
+	@Override
+	public Integer insertUnpackNecessary(
+			HisiUnpackNecessaryInfo hisiUnpackNecessaryInfo) {
+		HisiUnpackNecessaryPic hisiUnpackNecessary = new HisiUnpackNecessaryPic();
+		BeanCopyUtil.copyTo(hisiUnpackNecessaryInfo, hisiUnpackNecessary);
+		hisiUnpackNecessary.setTime(new Date());
+		String pic = hisiUnpackNecessary.getPicAccess();
+		if (!StringUtils.isEmpty(pic) && pic.indexOf(ftpPic) >= 0)
+			hisiUnpackNecessary.setPicAccess(pic.substring(pic.indexOf(ftpPic)
+					+ ftpPic.length()));
+		Integer re = hisiUnpackNecessaryPicMapper.insert(hisiUnpackNecessary);
+		return re;
+	}
+
+	@Override
+	public Integer deleteUnpackNecessary(int id) {
+		Integer re = hisiUnpackNecessaryPicMapper.deleteByPrimaryKey(id);
+		return re;
+	}
+
+	@Override
+	public PageInfo<HisiUnpackNecessaryPicReturnInfo> getUnpackNecessary(
+			int pageNum, int pageSize, String channelId) {
+		PageHelper.startPage(pageNum, pageSize);
+		List<HisiUnpackNecessaryPicReturnInfo> re = new ArrayList<HisiUnpackNecessaryPicReturnInfo>();
+		re = hisiUnpackNecessaryPicMapper.selectByChannelIdAndUnpack(channelId);
+		for (HisiUnpackNecessaryPicReturnInfo e : re)
+			e.setPicAccess(test + e.getPicAccess());
+		return new PageInfo<HisiUnpackNecessaryPicReturnInfo>(re);
+	}
+
+	@Override
+	public HisiTrackInfo getTrackingNow(String channelId) {
+		HisiTrackInfo re = hisiUnpackNecessaryPicMapper
+				.selectTrackingNow(channelId);
+		if (re != null) {
+			List<String> pictures = hisiUnpackMapper.selectTrackingPictures(re
+					.getTrackingNumber());
+			List<String> picturesReturn = new ArrayList<String>();
+			for (String picture : pictures) {
+				picture = ftpPic + picture;
+				picturesReturn.add(picture);
+			}
+			re.setPictures(picturesReturn);
+		}
+		return re;
+	}
+	@Override
+public int addScreenShotPhoto(HisiScreenshotPic hisiScreenshotPic) {
+	return hisiScreenshotPicMapper.insert(hisiScreenshotPic);
+}
+
+@Override
+public List<String> getScreenShotPhoto(String orderId) {
+	return hisiScreenshotPicMapper.getScreenShotPhoto(orderId);
+}
+
+@Override
+public List<String> getGoodsPhoto(String orderId) {
+	return hisiUnpackGoodsPicMapper.getGoodsPhoto(orderId);
+}
+	
+}

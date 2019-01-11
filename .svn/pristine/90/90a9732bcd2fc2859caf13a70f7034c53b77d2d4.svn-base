@@ -1,0 +1,11 @@
+package com.hisi.mapper;
+
+import java.util.List;
+
+import com.hisi.common.util.MyMapper;
+import com.hisi.model.HisiScreenshotPic;
+
+public interface HisiScreenshotPicMapper extends MyMapper<HisiScreenshotPic> {
+
+	List<String> getScreenShotPhoto(String orderId);
+}

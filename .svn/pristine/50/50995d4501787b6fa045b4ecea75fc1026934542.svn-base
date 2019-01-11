@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hisi.mapper.HisiPageOperateMapper">
+	<resultMap id="BaseResultMap" type="com.hisi.model.HisiPageOperate">
+		<!-- WARNING - @mbg.generated -->
+		<id column="id" jdbcType="INTEGER" property="id" />
+		<result column="page_id" jdbcType="INTEGER" property="pageId" />
+		<result column="operation" jdbcType="VARCHAR" property="operation" />
+	</resultMap>
+
+	<select id="getOperationByPageName" resultType="java.lang.String">
+		select operation from hisi_permission a LEFT JOIN hisi_page b on
+		a.page_id=b.id where b.page_name=#{pageName}
+	</select>
+</mapper>

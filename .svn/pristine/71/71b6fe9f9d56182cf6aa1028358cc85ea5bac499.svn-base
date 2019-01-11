@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hisi.mapper.HisiUserMapper">
+	<resultMap id="BaseResultMap" type="com.hisi.model.HisiUser">
+		<id column="id" jdbcType="INTEGER" property="id" />
+		<result column="userid" jdbcType="VARCHAR" property="userid" />
+		<result column="username" jdbcType="VARCHAR" property="username" />
+		<result column="password1" jdbcType="VARCHAR" property="password1" />
+		<result column="password" jdbcType="VARCHAR" property="password" />
+		<result column="telphone" jdbcType="VARCHAR" property="telphone" />
+		<result column="group_name" jdbcType="VARCHAR" property="groupName" />
+		<result column="staus" jdbcType="INTEGER" property="staus" />
+		<result column="department_name" jdbcType="VARCHAR" property="departmentName" />
+		<result column="savePath" jdbcType="VARCHAR" property="savepath" />
+		<result column="role_name" jdbcType="VARCHAR" property="roleName" />
+		<result column="manager" jdbcType="VARCHAR" property="manager" />
+		<result column="card_id" jdbcType="VARCHAR" property="cardId" />
+		<result column="iamge" jdbcType="LONGVARBINARY" property="iamge" />
+	</resultMap>
+	
+	<select id="getProxyPerson" resultType="java.lang.String">
+select username from hisi_user where role_name="货代录入员"
+	</select>
+	<select id="selectByUserId" parameterType="java.lang.String"
+		resultMap="BaseResultMap">
+		select * from hisi_user where
+		userid=#{userId}
+	</select>
+	<select id="selectAllAirportUser" resultMap="BaseResultMap">
+		select * from
+		hisi_user where
+		manager is null
+	</select>
+	<select id="getUserName" parameterType="java.lang.String"
+		resultType="java.lang.String">
+		select username from hisi_user where
+		userid=#{userId}
+	</select>
+	<select id="findProxyByCardId" parameterType="java.lang.String"
+		resultMap="BaseResultMap">
+		select * from hisi_user where
+		card_id=#{cardId}
+	</select>
+	<select id="findAllUsers" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+		select * from hisi_user a
+LEFT JOIN hisi_department b on a.department_name=b.name
+		where manager is null and b.id=#{departmentId} or b.parent_id=#{departmentId}
+	</select>
+	<select id="findUserByTelPhone" parameterType="java.lang.String"
+		resultMap="BaseResultMap">
+		select * from hisi_user where
+		telphone=#{telPhone}
+	</select>
+	<select id="findAllUserId" resultMap="BaseResultMap" resultType="java.lang.String">
+		select * from hisi_user where manager is null
+	</select>
+	<select id="findPathById" parameterType="java.lang.Integer"
+		resultType="java.lang.String">
+		select savePath from hisi_user where
+		id=#{id}
+	</select>
+
+	<select id="findByConditions" parameterType="java.lang.String"
+		resultMap="BaseResultMap">
+		select * from hisi_user
+		<where>
+			<if test="groupName!=null and groupName!=''">
+				and group_name= #{groupName}
+			</if>
+			<if test="roleName!=null and roleName!=''">
+				and role_name= #{roleName}
+			</if>
+			<if test="conditions!=null and conditions!=''">
+				and (telphone like '%${conditions}%' or
+				username like
+				'%${conditions}%' or userid
+				like '%${conditions}%')
+			</if>
+			and manager is null
+		</where>
+	</select>
+	<update id="updatePassword" parameterType="java.lang.String">
+		update hisi_user
+		set
+		password1 = #{newPassword,jdbcType=VARCHAR},
+		password =
+		#{newSecretPassword,jdbcType=VARCHAR}
+		where userid =
+		#{userId,jdbcType=VARCHAR}
+	</update>
+	<update id="updateRole" parameterType="java.lang.String">
+		update hisi_user
+		set
+		role_name = #{deviceRoleName}
+		where userid =
+		#{userId,jdbcType=VARCHAR}
+	</update>
+	<select id="selectStatus" parameterType="java.lang.String"
+		resultMap="BaseResultMap">
+		select * from hisi_user where
+		userid=#{userId}
+	</select>
+
+	<select id="findRoleByUserId" parameterType="java.lang.String"
+		resultType="java.lang.String">
+		select role_name from hisi_user where
+		userid=#{userId}
+	</select>
+	<select id="findProxyByCondition" resultMap="BaseResultMap">
+		select * from
+		hisi_user
+		<where>
+			<if test="condition!=null and condition!=''">
+				and (userid like '%${condition}%' or
+				username like '%${condition}%' or manager
+				like '%${condition}%'
+				or telphone like '%${condition}%')
+			</if>
+			and manager is not null
+		</where>
+	</select>
+	<select id="getDepartmentId" parameterType="java.lang.String"
+		resultType="com.hisi.model.HisiDepartment">
+		select * from hisi_department where name in (select
+		department_name from hisi_user where userid=#{userId})
+	</select>
+
+	<select id="getProxyList" resultMap="BaseResultMap">
+		select * from hisi_user
+		where
+		manager is not null
+	</select>
+	<select id="findByGroup" parameterType="java.lang.String"
+		resultMap="BaseResultMap">
+		select * from hisi_user
+		where
+		group_name=#{groupName}
+	</select>
+	<update id="updateDepartment" parameterType="java.lang.String">
+		update hisi_user
+		set
+		department_name =
+		#{departmentName,jdbcType=VARCHAR}
+		where userid =
+		#{userId,jdbcType=VARCHAR}
+	</update>
+
+	<update id="editProxy">
+		update hisi_user
+		set
+		userid
+		=#{userId,jdbcType=VARCHAR},
+		username =#{userName,jdbcType=VARCHAR},
+		manager =#{manager,jdbcType=VARCHAR},
+		telphone
+		=#{telphone,jdbcType=VARCHAR},
+		card_id=#{cardId,jdbcType=VARCHAR},
+		role_name=#{roleName}
+		where id =#{id}
+	</update>
+	<update id="disabledUser" parameterType="java.lang.Integer">
+		update hisi_user
+		set
+		staus = 1
+		where id = #{id}
+	</update>
+
+	<update id="undisabledUser" parameterType="java.lang.Integer">
+		update hisi_user
+		set
+		staus = 0
+		where id = #{id}
+	</update>
+	<update id="resetPassword" parameterType="java.lang.String">
+		update hisi_user
+		set
+		password = #{password,jdbcType=VARCHAR}
+		where
+		userid =
+		#{userId,jdbcType=VARCHAR}
+	</update>
+	<update id="editUser">
+		update hisi_user
+		set
+		userid=#{userId},
+		username=#{userName},
+		telphone=#{telPhone},
+		group_name=#{groupName},
+		savePath=#{savePath},
+		iamge=#{imageByte},
+		password=#{password},
+		role_name=#{roleName}
+		where id=#{id}
+	</update>
+	<update id="editPart">
+		update hisi_user
+		set
+		userid=#{userId},
+		username=#{userName},
+		telphone=#{telPhone},
+		group_name=#{groupName},
+		password=#{password},
+		role_name=#{roleName}
+		where id=#{id}
+	</update>
+
+</mapper>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hisi.mapper.HisiDepartmentMapper">
+	<resultMap id="BaseResultMap" type="com.hisi.model.HisiDepartment">
+		<!-- WARNING - @mbg.generated -->
+		<id column="id" property="id" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="parent_id" property="parentId" jdbcType="INTEGER" />
+	</resultMap>
+	
+	<select id="getName" resultType="java.lang.String">
+		select name from
+		hisi_department where id=#{departmentId}
+	</select>
+	<select id="findByDepartmentName" resultMap="BaseResultMap">
+		select * from
+		hisi_department where name=#{departmentName}
+	</select>
+	<select id="getGroupById" resultMap="BaseResultMap">
+		select * from
+		hisi_department where id=#{groupId}
+	</select>
+	<select id="getGroupsByParentId" resultMap="BaseResultMap">
+		select * from
+		hisi_department where parent_id=#{parentId}
+	</select>
+
+	<select id="findById" resultMap="BaseResultMap">
+		select * from hisi_department
+		where parent_id=#{id}
+	</select>
+
+	<update id="editDepartmentName">
+		update hisi_department
+		set name = #{departmentName}
+		where id = #{id}
+	</update>
+
+	<select id="getParentId" resultType="java.lang.Integer">
+		select id from
+		hisi_department
+		where name=#{parentName}
+	</select>
+	<select id="getGroupById1" resultMap="BaseResultMap">
+		SELECT
+		A.*
+		FROM
+		hisi_department A
+		INNER JOIN (
+		SELECT
+		getChildLst1 (#{groupId}) AS idArr
+		) TEMP
+		WHERE
+		FIND_IN_SET(A.id, TEMP.idArr);
+	</select>
+	<update id="editgroupName">
+		update hisi_department
+		set name = #{groupName}
+		where id
+		= #{id}
+	</update>
+	<select id="findByParentId" resultMap="BaseResultMap">
+		select * from
+		hisi_department
+		where parent_id=#{parentId}
+	</select>
+	<delete id="deleteGroup" parameterType="java.lang.Integer">
+		DELETE
+		FROM
+		hisi_department
+		WHERE
+id=#{id} or parent_id=#{ids}
+	</delete>
+</mapper>

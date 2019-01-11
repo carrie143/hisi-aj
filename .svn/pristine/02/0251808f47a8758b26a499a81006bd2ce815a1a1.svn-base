@@ -1,0 +1,320 @@
+.el-dialog__header{
+  border-bottom:1px solid #dcdfe6;
+}
+.tablecontainer{
+  border-top: 5px solid #e7eaec;
+  background: #fff;
+  margin-top:20px;
+}
+.tabletitle{
+  color: #263638;
+  background-color: #ffffff !important;
+
+}
+tr:nth-child(odd) {
+  background-color: #F3F7F9;
+}
+.table-bordered>thead>tr>th, .table-bordered>tbody>tr>th, .table-bordered>tfoot>tr>th, .table-bordered>thead>tr>td, .table-bordered>tbody>tr>td, .table-bordered>tfoot>tr>td {
+  border: 1px solid #e4eaec;
+  padding:15px  20px;
+}
+.table {
+  color: #76838f;
+
+}
+table {
+  border-collapse: collapse;
+}
+.panel-title {
+  display: block;
+  padding-left: 20px;
+  padding-right: 20px;
+  font-size: 16px;
+  color: #37474f;
+}
+
+.panel-heading {
+  position: relative;
+  padding: 0;
+  border-bottom: 1px solid #e4eaec;
+}
+.search-left .state-list {
+  float: left;
+  height: 35px;
+  line-height: 35px;
+  /* border: 1px solid #E8EDEF; */
+  border-radius: 2px;
+  margin-left: 5px;
+  vertical-align: middle;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-select: none;
+}
+.panel-body{
+  margin-top: 15px;
+  padding: 0 15px;
+  height: 35px;
+  line-height: 35px;
+  padding-bottom:15px;
+}
+.search-left .state-list span:nth-of-type(1) {
+  background-color: #5eb3ff;
+}
+.search-left .state-list span:nth-of-type(2) {
+  background-color: #F2A654;
+}
+.search-left .state-list span:nth-of-type(3) {
+  background-color: #57C7D4;
+}
+.search-left .state-list span>a {
+  display: inline-block;
+  width: 64px;
+  height: 22px;
+  position: absolute;
+  text-align: center;
+  right: 0;
+}
+.color-content {
+  color: #76838f;
+  width:271px;
+}
+.search-left .state-list span {
+  /* float: right; */
+  line-height: 22px;
+  cursor: pointer;
+  /* padding: 0 10px; */
+  display: inline-block;
+  border: 0;
+  width: 64px;
+  overflow: hidden;
+  height: 22px;
+  margin-left: 5px;
+  border-radius: 2px;
+  text-align: center;
+  color: #fff;
+  margin-top: 6.5px;
+  position: relative;
+}
+
+.panel-bordered{
+  background-color: #ffffff;
+  border-top: 5px solid #e7eaec;
+
+}
+.el-input__inner{
+  height:30px;
+}
+.el-dialog__title{
+  font-weight: bold;
+  font-size:16px ;
+}
+.el-dialog__body{
+  padding:10px 15px;
+}
+.el-button--primary{
+  background-color: #46be8a;
+  border:none;
+}
+.el-button--primary:hover{
+  background-color: #5cd29d;
+}
+.el-button--default:hover{
+  background-color: #e4eaec;
+  color:#606266;
+  border:1px solid #e4eaec;
+}
+.el-dialog{
+  margin-top: 15vh !important;
+}
+.el-form-item{
+  margin:0;
+}
+.el-date-editor--daterange.el-input, .el-date-editor--daterange.el-input__inner, .el-date-editor--timerange.el-input, .el-date-editor--timerange.el-input__inner{
+  width:250px;
+}
+.el-date-editor .el-range-input, .el-date-editor .el-range-separator{
+  height:70%;
+}
+.el-date-editor .el-range__icon{
+  line-height:23px;
+}
+.el-date-editor .el-range-separator{
+
+}
+.el-input__icon{
+  height:100%;
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+.el-range-editor.el-input__inner{
+  padding-left:4px;
+  padding:0;
+
+}
+.el-date-editor .el-range-input{
+  width:29%;
+  margin-left:5px;
+}
+.el-date-editor .el-range__icon{
+  margin:0;
+  background-color: #e4eaec;
+}
+.notice-time {
+  width: 290px;
+  line-height: 25px;
+  border: 1px solid #e8edef;
+  border-radius: 2px;
+  outline: none;
+  padding: 0;
+  text-indent: 45px;
+}
+.time-list {
+  display: inline-block;
+  margin-left: 16px;
+  position: relative;
+  top: -1px;
+}
+.time-list span {
+  width: 38px;
+  height: 26px;
+  line-height: 25px;
+  text-align: center;
+  display: inline-block;
+  cursor: pointer;
+}
+.time-list span:first-child {
+  position: absolute;
+  top: 6px;
+  left: 0;
+  border-top-left-radius: 2px;
+  border-bottom-left-radius: 2px;
+  background:  #e4eaec;
+  color: #999999;
+}
+.time-list span:last-child {
+  position: absolute;
+  top: 6px;
+  right: 0;
+  border-top-right-radius: 2px;
+  border-bottom-right-radius: 2px;
+  background:  #e4eaec;
+  color: #999999;
+}
+.notice-time {
+  width: 290px;
+  line-height: 25px;
+  border: 1px solid #e8edef;
+  border-radius: 2px;
+  outline: none;
+  padding: 0;
+  text-indent: 40px;
+
+}
+:-moz-placeholder { /* Mozilla Firefox 4 to 18 */
+  color: #9c9c9c; opacity:1;
+}
+
+::-moz-placeholder { /* Mozilla Firefox 19+ */
+  color: #9c9c9c;opacity:1;
+}
+
+input:-ms-input-placeholder{
+  color: #9c9c9c;opacity:1;
+}
+
+input::-webkit-input-placeholder{
+  color: #9c9c9c;opacity:1;
+}
+/*翻页样式*/
+.el-pagination.is-background .el-pager li{
+  margin:0;
+  border-right: 1px solid #e8edef;
+}
+
+.el-pagination.is-background .btn-next, .el-pagination.is-background .btn-prev, .el-pagination.is-background .el-pager li{
+  margin:0;
+  background-color: #ffffff;
+}
+.el-pagination{
+  padding:0;
+  margin-top:20px;
+  border:1px solid #e8edef;
+
+}
+.el-pagination.is-background .btn-prev{
+  border-right:1px solid #e8edef;;
+}
+
+/*删除框样式*/
+.tishi-windows {
+  border-radius: 5px;
+  background-color: #ffeeee;
+  position: fixed;
+  width: 454px;
+  top: 46%;
+  left: 41.5%;
+  height: 90px;
+  z-index: 99;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+  /* display: none; */
+}
+.tishi-bottom {
+  padding-left: 48px;
+  padding-top: 10px;
+}
+.tishi-bottom .delete-span {
+  background-color: #f96868;
+  color: #fff;
+}
+.tishi-top span {
+  display: inline-block;
+  color: #f96868;
+  line-height: 20px;
+}
+.tishi-bottom span {
+  display: inline-block;
+  width: 54px;
+  height: 31px;
+  border-radius: 2px;
+  line-height: 31px;
+  text-align: center;
+  cursor: pointer;
+  margin: 0;
+  margin-right: 18px;
+}
+.font-14 {
+  font-size: 12px;
+}
+.tishi-bottom .cancel-span {
+  background-color: #ffeeee;
+  color: #76838f;
+}
+.tishi-top i {
+  display: inline-block;
+  width: 15px;
+  height: 20px;
+  top: 4px;
+  left: 14px;
+  position: relative;
+  margin-right: 20px;
+}
+.redlingdang {
+  /*background: url(../img/red_info_tishi.png) no-repeat 50% 50%;*/
+  background-size: 15px;
+}
+/*.tishi-top img {*/
+  /*position: absolute;*/
+  /*top: 10px;*/
+  /*right: 10px;*/
+  /*cursor: pointer;*/
+/*}*/
+.pop-up-windows {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  /* display: none; */
+  /* background: #000000; */
+}

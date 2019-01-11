@@ -1,0 +1,23 @@
+package com.hisi.service;
+
+import java.util.List;
+
+import com.hisi.model.HisiRole;
+
+public interface RoleService {
+
+	int addRole(String roleName, String roleDesc);
+
+	int editRole(Integer id, String roleName, String roleDesc);
+
+	List<HisiRole> getRole(Integer pageNum,Integer pageSize);
+
+	int deleteRole(Integer id);
+
+	List<String> findAllRole();
+
+	List<HisiRole> getRoles();
+
+	int deleteRolePermission(Integer id);
+
+}

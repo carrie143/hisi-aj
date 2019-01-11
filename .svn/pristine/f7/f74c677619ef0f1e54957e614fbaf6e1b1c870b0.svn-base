@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hisi.mapper.HisiUnpackGoodsPicMapper">
+  <resultMap id="BaseResultMap" type="com.hisi.model.HisiUnpackGoodsPic">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="unpack_id" jdbcType="INTEGER" property="unpackId" />
+    <result column="access" jdbcType="VARCHAR" property="access" />
+    <result column="time" jdbcType="TIMESTAMP" property="time" />
+  </resultMap>
+	<select id="selectByUnpackId" resultType="java.lang.String">
+		select access from hisi_unpack_goods_pic where unpack_id=#{unpackId}
+	</select>
+	<select id="getGoodsPhoto" resultType="java.lang.String">
+		select access from hisi_unpack_goods_pic a left join hisi_unpack b on a.unpack_id=b.id 
+			<where>
+		b.tracking_number=#{orderId}
+			<if test="startTime!=null and startTime!='' and endTime!=null and endTime!=''">
+				and a.`time` BETWEEN #{startTime} and #{endTime} 
+			</if>
+		</where>
+	</select>
+	<update id="updateUnpackId">
+		update hisi_unpack_goods_pic set unpack_id=#{id} where access=#{url}
+	</update>
+</mapper>

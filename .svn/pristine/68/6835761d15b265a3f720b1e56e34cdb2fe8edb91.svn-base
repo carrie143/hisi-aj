@@ -1,0 +1,25 @@
+package com.hisi.arcsoft;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+@Component
+//@PropertySource("classpath:config.properties")
+public class ConfigInfo {
+
+	@Value("${fd.sdk}")
+	private String fdsdk;
+	@Value("${fr.sdk}")
+	private String frsdk;
+
+
+	public String getFdsdk() {
+		return fdsdk;
+	}
+
+	public String getFrsdk() {
+		return frsdk;
+	}
+
+
+}

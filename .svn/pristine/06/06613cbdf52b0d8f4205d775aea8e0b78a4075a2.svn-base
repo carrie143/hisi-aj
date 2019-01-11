@@ -1,0 +1,55 @@
+package com.hisi.controller;
+
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+
+import java.util.HashMap;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.hisi.model.HisiOrderinfoBasic;
+import com.hisi.model.HisiOrderinfoPhoto;
+import com.hisi.model.vo.SceneOrderVo;
+import com.hisi.service.OrderService;
+
+@RestController
+@RequestMapping("/scene")
+public class SceneController {
+	@Autowired
+	private OrderService OrderService;
+	@Value("${ftp.pic}")
+	private String imagesPath;
+	@ApiOperation(value = "获取通道列表",httpMethod="GET")
+	@GetMapping(value="/getChannelIds")
+	public HashMap<String, List<String>> getChannelIds(){
+		//正在安检的通道
+		List<String> checkingChannelId=OrderService.getCheckingChannelId();
+		List<String> unCheckingChannelId=OrderService.getUnCheckingChannelId();
+		HashMap<String, List<String>> map=new HashMap<String, List<String>>();
+		map.put("checkingChannelId", checkingChannelId);
+		map.put("unCheckingChannelId", unCheckingChannelId);
+		return map;
+	}
+	@ApiOperation(value = "获取正在安检运单详细信息",httpMethod="GET")
+	@GetMapping(value="/getOrderInfo")
+	public SceneOrderVo getOrderInfo(@RequestParam(required = true) @ApiParam("通道号") String channelId){
+		HisiOrderinfoBasic hisiOrderinfoBasic=OrderService.getOrderInfo(channelId);
+		List<HisiOrderinfoPhoto> photos=OrderService.getOrderinfoPhotoByChannelId(channelId);
+		if(!photos.isEmpty()){
+		for(int i=0;i<photos.size();i++){
+			String photoPath = photos.get(i).getPhotoPath();
+			photoPath=imagesPath+photoPath;
+			photos.get(i).setPhotoPath(photoPath);
+		}}
+		SceneOrderVo orderVo=new SceneOrderVo();
+		orderVo.setHisiOrderinfoBasic(hisiOrderinfoBasic);
+		orderVo.setPhotos(photos);
+		 return orderVo;
+	}
+}

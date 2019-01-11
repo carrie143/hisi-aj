@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hisi.mapper.HisiOrderinfoOtherMapper" >
+  <resultMap id="BaseResultMap" type="com.hisi.model.HisiOrderinfoOther" >
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="order_id" property="orderId" jdbcType="VARCHAR" />
+    <result column="check_person" property="checkPerson" jdbcType="VARCHAR" />
+    <result column="open_person" property="openPerson" jdbcType="VARCHAR" />
+    <result column="start_time" property="startTime" jdbcType="TIMESTAMP" />
+    <result column="end_time" property="endTime" jdbcType="TIMESTAMP" />
+    <result column="pause_time" property="pauseTime" jdbcType="TIMESTAMP" />
+    <result column="channelId" property="channelid" jdbcType="VARCHAR" />
+  </resultMap>
+  <delete id="deleteOther" parameterType="java.lang.String">
+		DELETE
+		FROM
+		hisi_orderinfo_other
+		WHERE
+		order_id = #{orderId}
+	</delete>
+
+	<select id="selectByOrderId" parameterType="java.lang.String"
+		resultMap="BaseResultMap">
+		select * from hisi_orderinfo_other where order_id=#{orderId}
+	</select>
+
+	<select id="getCheckingChannelId" resultType="java.lang.String">
+		select channelId from hisi_orderinfo_other where start_time is not null and pause_time is null and end_time is null
+	</select>
+	<select id="getUnCheckingChannelId" resultType="java.lang.String">
+	select a.channel_id from hisi_channel a where channel_id not in (select channelId from hisi_orderinfo_other where start_time is not null and pause_time is null and end_time is null
+)
+	</select>
+	<select id="findCheckingOrder" parameterType="java.lang.String"
+		resultMap="BaseResultMap">
+		select * from hisi_orderinfo_other where channelId=#{channelId} and end_time is null and pause_time is null
+	
+	</select>
+	<update id="updateOtherEndTime">
+		update hisi_orderinfo_other
+		set end_time =#{date},
+		check_person=#{userName}
+		where order_id = #{orderId} and pause_time is null
+	</update>
+
+	<update id="updateOtherPauseTime">
+		update hisi_orderinfo_other
+		set pause_time =#{date}
+		where order_id = #{orderId} and pause_time is null and end_time is null
+	</update>
+</mapper>

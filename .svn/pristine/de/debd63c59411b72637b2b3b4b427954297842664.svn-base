@@ -1,0 +1,78 @@
+package com.hisi.model;
+
+import javax.persistence.*;
+
+@Table(name = "hisi_unpack_goods_pic")
+public class HisiUnpackGoodsPic {
+    /**
+     * 自增
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    /**
+     * 开包记录id
+     */
+    @Column(name = "unpack_id")
+    private Integer unpackId;
+
+    /**
+     * 图片地址
+     */
+    private String access;
+
+    /**
+     * 获取自增
+     *
+     * @return id - 自增
+     */
+    public Integer getId() {
+        return id;
+    }
+
+    /**
+     * 设置自增
+     *
+     * @param id 自增
+     */
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    /**
+     * 获取开包记录id
+     *
+     * @return unpack_id - 开包记录id
+     */
+    public Integer getUnpackId() {
+        return unpackId;
+    }
+
+    /**
+     * 设置开包记录id
+     *
+     * @param unpackId 开包记录id
+     */
+    public void setUnpackId(Integer unpackId) {
+        this.unpackId = unpackId;
+    }
+
+    /**
+     * 获取图片地址
+     *
+     * @return access - 图片地址
+     */
+    public String getAccess() {
+        return access;
+    }
+
+    /**
+     * 设置图片地址
+     *
+     * @param access 图片地址
+     */
+    public void setAccess(String access) {
+        this.access = access;
+    }
+}

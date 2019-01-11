@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hisi.mapper.HisiGroupMapper" >
+  <resultMap id="BaseResultMap" type="com.hisi.model.HisiGroup" >
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="group_name" property="groupName" jdbcType="VARCHAR" />
+    <result column="department_name" property="departmentName" jdbcType="VARCHAR" />
+  </resultMap>
+  
+  		<select id="findGroupName"  parameterType="java.lang.String" >
+		select * from hisi_group where department_name=#{oldName}
+	</select>
+	
+	<select id="selectByDepartmentName"  parameterType="java.lang.String" >
+		select * from hisi_group where department_name=#{departmentName}
+	</select>
+	
+	  	 <delete id="deleteByGroupName" parameterType="java.lang.String">	 	
+		 	  DELETE
+				FROM
+					hisi_group
+			   WHERE
+					group_name = #{groupNmae}
+ 	 </delete>
+</mapper>

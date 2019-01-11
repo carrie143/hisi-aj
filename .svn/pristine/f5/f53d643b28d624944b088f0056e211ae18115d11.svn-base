@@ -1,0 +1,13 @@
+package com.hisi.mapper;
+
+import org.apache.ibatis.annotations.Param;
+
+import com.hisi.common.util.MyMapper;
+import com.hisi.model.HisiRole;
+
+public interface HisiRoleMapper extends MyMapper<HisiRole> {
+
+	int editRole(@Param(value="id")Integer id,@Param(value="roleName") String roleName, @Param(value="roleDesc")String roleDesc);
+
+	int deleteById(Integer id);
+}

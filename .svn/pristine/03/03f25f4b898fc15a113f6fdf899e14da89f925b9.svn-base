@@ -1,0 +1,8 @@
+addUserPath=E:\\add
+loginPath=E:\\login
+
+#fd.sdk=E\:\\dll\\n\\libarcsoft_fsdk_face_detection.dll
+#fr.sdk=E\:\\dll\\n\\libarcsoft_fsdk_face_recognition.dll
+
+fd.sdk=/dll/n/libarcsoft_fsdk_face_detection.dll
+fr.sdk=/dll/n/libarcsoft_fsdk_face_recognition.dll

@@ -1,0 +1,33 @@
+package com.hisi.mapper;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
+import com.hisi.common.util.MyMapper;
+import com.hisi.model.HisiDepartment;
+
+public interface HisiDepartmentMapper extends MyMapper<HisiDepartment> {
+	List<HisiDepartment> getGroupById(int groupId);
+
+	List<HisiDepartment> getGroupsByParentId(int parentId);
+
+	List<HisiDepartment> findById(Integer id);
+
+	int editDepartmentName(@Param(value="id")Integer id, @Param(value="departmentName")String departmentName);
+
+	int getParentId(String parentName);
+
+	int deleteGroup(String groupName);
+
+	List<HisiDepartment> findByParentId(Integer parentId);
+
+	int editgroupName(@Param(value="id")Integer id, @Param(value="groupName")String groupName);
+
+	List<HisiDepartment> getGroupById1(Integer groupId);
+
+	List<HisiDepartment> findByDepartmentName(String departmentName);
+
+	String getName(int departmentId);
+
+}
